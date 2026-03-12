@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PMCH — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --panel: #0f1628;
+    --border: #1e3a5f;
+    --accent: #00d4ff;
+    --accent2: #0066ff;
+    --accent3: #00ff88;
+    --text: #c8daf0;
+    --text-dim: #4a6a8a;
+    --error: #ff4466;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    font-family: 'Exo 2', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .orb1 { position: fixed; top: -150px; left: -150px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(0,102,255,0.1) 0%, transparent 70%); pointer-events: none; }
+  .orb2 { position: fixed; bottom: -150px; right: -150px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 70%); pointer-events: none; }
+  .login-box {
+    position: relative; z-index: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 44px;
+    width: 100%; max-width: 420px;
+    animation: fadeUp 0.6s ease both;
+  }
+  .login-box::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    border-radius: 20px 20px 0 0;
+  }
+  .logo-area { text-align: center; margin-bottom: 36px; }
+  .logo-circle {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 22px;
+    color: #fff; margin: 0 auto 16px;
+    box-shadow: 0 0 32px rgba(0,212,255,0.25);
+  }
+  .logo-area h1 { font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 3px; color: #fff; text-transform: uppercase; }
+  .logo-area p { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 1.5px; margin-top: 6px; text-transform: uppercase; }
+  .error-banner { display: none; align-items: center; gap: 10px; padding: 12px 16px; background: rgba(255,68,102,0.1); border: 1px solid rgba(255,68,102,0.3); border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: var(--error); font-family: 'Share Tech Mono', monospace; }
+  .error-banner.show { display: flex; }
+  .field { margin-bottom: 18px; }
+  .field label { display: block; font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+  .field input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; padding: 13px 16px; color: var(--text); font-family: 'Exo 2', sans-serif; font-size: 15px; outline: none; transition: all 0.2s; }
+  .field input::placeholder { color: var(--text-dim); font-size: 13px; }
+  .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,212,255,0.08); background: rgba(0,212,255,0.03); }
+  .password-wrap { position: relative; }
+  .password-wrap input { padding-right: 48px; }
+  .toggle-eye { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 16px; padding: 4px; transition: color 0.2s; }
+  .toggle-eye:hover { color: var(--accent); }
+  .btn-login { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent2), var(--accent)); border: none; border-radius: 10px; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; margin-top: 8px; transition: all 0.2s; box-shadow: 0 4px 20px rgba(0,102,255,0.3); }
+  .btn-login:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(0,102,255,0.45); }
+  .hint-box { margin-top: 24px; padding: 12px 16px; background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.1); border-radius: 8px; text-align: center; }
+  .hint-box p { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+  .hint-box span { color: var(--accent); }
+  .footer-text { text-align: center; margin-top: 28px; font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="orb1"></div>
+<div class="orb2"></div>
+<div class="login-box">
+  <div class="logo-area">
+    <div class="logo-circle">PMCH</div>
+    <h1>System Tracker</h1>
+    <p>IT Asset Management Portal — Authorized Access Only</p>
+  </div>
+  <div class="error-banner" id="errorBanner">
+    ⚠ Invalid username or password. Try again.
+  </div>
+  <form action="/login" method="POST">
+    <div class="field">
+      <label>Username</label>
+      <input type="text" name="username" placeholder="Enter your username" autocomplete="off" required />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <div class="password-wrap">
+        <input type="password" name="password" id="passInput" placeholder="Enter your password" required />
+        <button type="button" class="toggle-eye" onclick="togglePass()">👁</button>
+      </div>
+    </div>
+    <button type="submit" class="btn-login">LOGIN →</button>
+  </form>
+  <div class="hint-box">
+    <p>Default → User: <span>pmch</span> &nbsp;|&nbsp; Pass: <span>admin123</span></p>
+  </div>
+  <div class="footer-text">PMCH · Prince Medical College & Hospital · IT Dept</div>
+</div>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('error') === '1') {
+    document.getElementById('errorBanner').classList.add('show');
+  }
+  function togglePass() {
+    const inp = document.getElementById('passInput');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+</script>
+</body>
+</html>

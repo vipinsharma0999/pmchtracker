@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PMCH · Asset Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg:        #060a12;
+  --surface:   #0d1424;
+  --surface2:  #111c30;
+  --border:    rgba(99,160,255,0.12);
+  --border-h:  rgba(99,160,255,0.35);
+  --accent:    #3b82f6;
+  --accent2:   #06d6a0;
+  --accent3:   #f59e0b;
+  --danger:    #ef4444;
+  --text:      #e2eaf8;
+  --text-muted:#6b84a8;
+  --text-dim:  #3a4f6a;
+  --glow:      rgba(59,130,246,0.15);
+  --glow2:     rgba(6,214,160,0.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Animated background ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(59,130,246,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(6,214,160,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(245,158,11,0.03) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(59,130,246,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+}
+
+.wrap { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+
+/* ── Header ── */
+.header {
+  display: flex; align-items: center; gap: 20px;
+  padding-bottom: 32px; margin-bottom: 36px;
+  border-bottom: 1px solid var(--border);
+  animation: slideDown 0.7s cubic-bezier(.16,1,.3,1) both;
+}
+
+.logo {
+  width: 56px; height: 56px; border-radius: 16px; flex-shrink: 0;
+  background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px;
+  color: white; letter-spacing: 0.5px;
+  box-shadow: 0 0 0 1px rgba(99,160,255,0.2), 0 8px 32px rgba(59,130,246,0.25), 0 0 60px rgba(59,130,246,0.1);
+  position: relative;
+}
+.logo::after {
+  content: '';
+  position: absolute; inset: -1px; border-radius: 17px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  pointer-events: none;
+}
+
+.header-text h1 {
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 22px; letter-spacing: 3px; text-transform: uppercase; color: #fff;
+  line-height: 1;
+}
+.header-text p {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 6px;
+}
+
+.header-right { margin-left: auto; text-align: right; }
+.ticket-id {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  color: var(--accent); letter-spacing: 1px; margin-bottom: 8px;
+}
+.live-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 100px; font-size: 10px; font-weight: 500;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: 1.5px;
+  background: rgba(6,214,160,0.08); border: 1px solid rgba(6,214,160,0.2); color: var(--accent2);
+}
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent2);
+  animation: pulse 2s infinite;
+}
+
+/* ── Stats ── */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  padding: 20px 24px; position: relative; overflow: hidden;
+  animation: fadeUp 0.6s cubic-bezier(.16,1,.3,1) both;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.6;
+}
+.stat-card:last-child::before { background: linear-gradient(90deg, transparent, var(--accent2), transparent); }
+.stat-num {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 42px;
+  line-height: 1; background: linear-gradient(135deg, #fff, #a8c0e8);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.stat-card:last-child .stat-num { background: linear-gradient(135deg, var(--accent2), #a8f0dc); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.stat-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin-top: 4px;
+}
+.stat-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 36px; opacity: 0.07; }
+
+/* ── Section cards ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 28px 32px; margin-bottom: 20px;
+  position: relative; overflow: hidden;
+  animation: fadeUp 0.6s cubic-bezier(.16,1,.3,1) both;
+  transition: border-color 0.3s;
+}
+.card:hover { border-color: var(--border-h); }
+.card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(99,160,255,0.4) 50%, transparent 100%);
+}
+
+.card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+.card-icon {
+  width: 40px; height: 40px; border-radius: 12px; display: flex;
+  align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+  border: 1px solid rgba(59,130,246,0.2); background: rgba(59,130,246,0.08);
+}
+.card-icon.green { border-color: rgba(6,214,160,0.2); background: rgba(6,214,160,0.08); }
+.card-icon.amber { border-color: rgba(245,158,11,0.2); background: rgba(245,158,11,0.08); }
+.card-icon.purple { border-color: rgba(167,139,250,0.2); background: rgba(167,139,250,0.08); }
+
+.card-title {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px;
+  letter-spacing: 2.5px; text-transform: uppercase; color: #fff;
+}
+.card-sub {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px;
+}
+
+/* ── Required badge ── */
+.req-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 6px; font-size: 10px;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; margin-bottom: 20px;
+  background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); color: #7baef8;
+}
+
+/* ── Grid ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.col-2 { grid-column: span 2; }
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* ── Form fields ── */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase;
+}
+.field label .req { color: var(--accent); margin-right: 4px; }
+
+.field-input {
+  width: 100%; padding: 11px 14px; border-radius: 10px; outline: none;
+  background: rgba(0,0,0,0.35); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px;
+  transition: all 0.2s; -webkit-appearance: none; appearance: none;
+}
+.field-input:focus {
+  border-color: rgba(59,130,246,0.5);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.05);
+  background: rgba(59,130,246,0.04);
+}
+.field-input::placeholder { color: var(--text-dim); font-size: 13px; }
+select.field-input {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b84a8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
+}
+select.field-input option { background: #0d1424; }
+textarea.field-input { resize: vertical; min-height: 90px; line-height: 1.6; }
+input[type="date"].field-input::-webkit-calendar-picker-indicator { filter: invert(0.5) sepia(1) saturate(2) hue-rotate(190deg); cursor: pointer; }
+
+/* ── Radio status ── */
+.status-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.radio-opt input[type="radio"] { display: none; }
+.radio-opt label {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 16px; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 500;
+  transition: all 0.2s; white-space: nowrap; border: 1px solid var(--border); color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+}
+.radio-opt label:hover { border-color: var(--border-h); color: var(--text); }
+.radio-opt.active input:checked + label  { border-color: #06d6a0; color: #06d6a0; background: rgba(6,214,160,0.08); box-shadow: 0 0 16px rgba(6,214,160,0.1); }
+.radio-opt.faulty input:checked + label  { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.08); box-shadow: 0 0 16px rgba(239,68,68,0.1); }
+.radio-opt.warn input:checked + label    { border-color: #f59e0b; color: #f59e0b; background: rgba(245,158,11,0.08); box-shadow: 0 0 16px rgba(245,158,11,0.1); }
+.radio-opt.blue input:checked + label   { border-color: #60a5fa; color: #60a5fa; background: rgba(96,165,250,0.08); box-shadow: 0 0 16px rgba(96,165,250,0.1); }
+.radio-opt.gray input:checked + label   { border-color: #94a3b8; color: #94a3b8; background: rgba(148,163,184,0.08); }
+
+/* ── Buttons ── */
+.btn-row { display: flex; gap: 10px; padding-top: 24px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+
+.btn {
+  padding: 13px 22px; border-radius: 12px; font-family: 'Syne', sans-serif;
+  font-weight: 700; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase;
+  cursor: pointer; border: none; transition: all 0.2s; outline: none;
+  display: flex; align-items: center; gap: 8px; white-space: nowrap;
+}
+.btn:active { transform: scale(0.97); }
+
+.btn-ghost {
+  background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+}
+.btn-ghost:hover { border-color: var(--border-h); color: var(--text); background: rgba(99,160,255,0.05); }
+
+.btn-primary {
+  flex: 1; justify-content: center;
+  background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
+  color: white; box-shadow: 0 4px 20px rgba(59,130,246,0.3), 0 0 0 1px rgba(255,255,255,0.05) inset;
+}
+.btn-primary:hover { box-shadow: 0 6px 28px rgba(59,130,246,0.45), 0 0 0 1px rgba(255,255,255,0.08) inset; transform: translateY(-1px); }
+
+.btn-success {
+  background: linear-gradient(135deg, #065f46, #059669);
+  color: white; box-shadow: 0 4px 20px rgba(6,214,160,0.2), 0 0 0 1px rgba(255,255,255,0.05) inset;
+}
+.btn-success:hover { box-shadow: 0 6px 28px rgba(6,214,160,0.3); transform: translateY(-1px); }
+
+.btn-danger {
+  background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #f87171;
+}
+.btn-danger:hover { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.45); }
+
+/* ── Info box ── */
+.info-box {
+  background: rgba(59,130,246,0.04); border: 1px solid rgba(59,130,246,0.12);
+  border-radius: 14px; padding: 16px 20px; margin-top: 18px;
+  font-size: 13px; color: #7baef8; line-height: 1.8;
+}
+.info-box .info-title {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--accent);
+  margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+}
+.info-box b { color: #c8dcff; }
+.info-box code {
+  background: rgba(0,0,0,0.4); border: 1px solid rgba(99,160,255,0.15);
+  padding: 1px 6px; border-radius: 5px; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+}
+
+/* ── Toast ── */
+#toast {
+  position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+  padding: 14px 22px; border-radius: 14px; font-size: 13px; font-weight: 500;
+  display: none; align-items: center; gap: 10px; max-width: 400px;
+  backdrop-filter: blur(20px); box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* ── Animations ── */
+@keyframes slideDown { from { opacity:0; transform:translateY(-24px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeUp    { from { opacity:0; transform:translateY(20px); }  to { opacity:1; transform:translateY(0); } }
+@keyframes pulse     { 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:0.4; transform:scale(0.85);} }
+@keyframes shimmer   { from{background-position:-200% 0} to{background-position:200% 0} }
+
+.card:nth-child(1) { animation-delay: 0.1s; }
+.card:nth-child(2) { animation-delay: 0.18s; }
+.card:nth-child(3) { animation-delay: 0.26s; }
+.card:nth-child(4) { animation-delay: 0.34s; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #2a4f7a; }
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div class="wrap">
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <div class="logo">PMCH</div>
+    <div class="header-text">
+      <h1>System Asset Tracker</h1>
+      <p>Prince Medical College & Hospital — IT Department</p>
+    </div>
+    <div class="header-right">
+      <div class="ticket-id" id="ticketId">LOADING...</div>
+      <div class="live-badge"><div class="live-dot"></div>Live System</div>
+    </div>
+  </div>
+
+  <!-- ── Stats ── -->
+  <div class="stats-grid" style="animation-delay:0.05s;">
+    <div class="stat-card">
+      <div class="stat-icon">📋</div>
+      <div class="stat-num" id="statTotal">0</div>
+      <div class="stat-label">Total Records Saved</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✨</div>
+      <div class="stat-num" id="statSession">0</div>
+      <div class="stat-label">Added This Session</div>
+    </div>
+  </div>
+
+  <form id="trackerForm">
+
+    <!-- ── Section 1: Device Identity ── -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">🖥️</div>
+        <div>
+          <div class="card-title">Device Identity</div>
+          <div class="card-sub">Serial & Identification</div>
+        </div>
+      </div>
+      <div class="req-badge">⚡ Fields marked with ★ are required</div>
+      <div class="grid-2">
+        <div class="field">
+          <label><span class="req">★</span> Serial Number</label>
+          <input type="text" class="field-input" placeholder="e.g. SN-2024-HP-00123" id="serialNo"/>
+        </div>
+        <div class="field">
+          <label><span class="req">★</span> Asset Tag / ID</label>
+          <input type="text" class="field-input" placeholder="e.g. PMCH-IT-0042" id="assetTag"/>
+        </div>
+        <div class="field">
+          <label><span class="req">★</span> Device Type</label>
+          <select class="field-input" id="deviceType">
+            <option value="">— Select Type —</option>
+            <option>Desktop PC</option><option>Laptop</option><option>Server</option>
+            <option>Workstation</option><option>Printer</option><option>Scanner</option>
+            <option>Network Switch</option><option>UPS</option><option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label><span class="req">★</span> Brand / Manufacturer</label>
+          <select class="field-input" id="brand">
+            <option value="">— Select Brand —</option>
+            <option>HP</option><option>Dell</option><option>Lenovo</option><option>Acer</option>
+            <option>Asus</option><option>Apple</option><option>Samsung</option><option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Model Name / Number</label>
+          <input type="text" class="field-input" placeholder="e.g. HP ProDesk 400 G7" id="model"/>
+        </div>
+        <div class="field">
+          <label>MAC Address</label>
+          <input type="text" class="field-input" placeholder="e.g. A1:B2:C3:D4:E5:F6" id="mac"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section 2: Location ── -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="border-color:rgba(6,214,160,0.2);background:rgba(6,214,160,0.08);">📍</div>
+        <div>
+          <div class="card-title">Placement & Location</div>
+          <div class="card-sub">Where is this system installed</div>
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="field">
+          <label><span class="req">★</span> Building / Block</label>
+          <select class="field-input" id="building">
+            <option value="">— Select Block —</option>
+            <option>Main Building</option><option>OPD Block</option><option>Emergency Block</option>
+            <option>ICU Block</option><option>Admin Block</option><option>Lab Block</option>
+            <option>Radiology Block</option><option>Operation Theatre</option>
+          </select>
+        </div>
+        <div class="field">
+          <label><span class="req">★</span> Floor</label>
+          <select class="field-input" id="floor">
+            <option value="">— Floor —</option>
+            <option>Basement</option><option>Ground Floor</option><option>1st Floor</option>
+            <option>2nd Floor</option><option>3rd Floor</option><option>4th Floor</option><option>5th Floor</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Room / Cabin No.</label>
+          <input type="text" class="field-input" placeholder="e.g. Room 204" id="room"/>
+        </div>
+        <div class="field col-2">
+          <label><span class="req">★</span> Department</label>
+          <select class="field-input" id="department">
+            <option value="">— Select Department —</option>
+            <option>Cardiology</option><option>Neurology</option><option>Orthopedics</option>
+            <option>Radiology</option><option>Pathology</option><option>Pharmacy</option>
+            <option>HR & Admin</option><option>Finance</option><option>IT Department</option>
+            <option>Reception / OPD</option><option>Blood Bank</option>
+            <option>NICU / ICU</option><option>Operation Theatre</option><option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Desk / Position</label>
+          <input type="text" class="field-input" placeholder="e.g. Reception Desk 2" id="desk"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section 3: Hardware ── -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon green">⚙️</div>
+        <div>
+          <div class="card-title">Hardware Specifications</div>
+          <div class="card-sub">System configuration details</div>
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="field">
+          <label>Processor (CPU)</label>
+          <input type="text" class="field-input" placeholder="e.g. Intel Core i5-10400" id="cpu"/>
+        </div>
+        <div class="field">
+          <label>RAM</label>
+          <select class="field-input" id="ram">
+            <option value="">— RAM —</option>
+            <option>2 GB</option><option>4 GB</option><option>8 GB</option>
+            <option>16 GB</option><option>32 GB</option><option>64 GB</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Storage</label>
+          <select class="field-input" id="storage">
+            <option value="">— Storage —</option>
+            <option>128 GB SSD</option><option>256 GB SSD</option><option>512 GB SSD</option>
+            <option>1 TB HDD</option><option>2 TB HDD</option><option>500 GB HDD</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Operating System</label>
+          <select class="field-input" id="os">
+            <option value="">— OS —</option>
+            <option>Windows 11 Pro</option><option>Windows 10 Pro</option>
+            <option>Windows 10 Home</option><option>Windows 7</option>
+            <option>Ubuntu Linux</option><option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Monitor Size</label>
+          <select class="field-input" id="monitor">
+            <option value="">— Monitor —</option>
+            <option>17 inch</option><option>19 inch</option><option>21 inch</option>
+            <option>24 inch</option><option>27 inch</option><option>No Monitor</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>IP Address</label>
+          <input type="text" class="field-input" placeholder="e.g. 192.168.1.105" id="ip"/>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="grid-3">
+        <div class="field">
+          <label><span class="req">★</span> Setup / Install Date</label>
+          <input type="date" class="field-input" id="setupDate"/>
+        </div>
+        <div class="field">
+          <label>Purchase Date</label>
+          <input type="date" class="field-input" id="purchaseDate"/>
+        </div>
+        <div class="field">
+          <label>Warranty Expiry</label>
+          <input type="date" class="field-input" id="warranty"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Section 4: Assignment & Status ── -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon amber">👤</div>
+        <div>
+          <div class="card-title">Assignment & Status</div>
+          <div class="card-sub">User assignment & current condition</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Assigned To</label>
+          <input type="text" class="field-input" placeholder="e.g. Dr. Ramesh Kumar" id="assignedTo"/>
+        </div>
+        <div class="field">
+          <label>Employee ID</label>
+          <input type="text" class="field-input" placeholder="e.g. EMP-2045" id="empId"/>
+        </div>
+        <div class="field">
+          <label>Contact Number</label>
+          <input type="tel" class="field-input" placeholder="e.g. +91 98765 43210" id="contact"/>
+        </div>
+        <div class="field">
+          <label>Tracked By (IT Staff)</label>
+          <input type="text" class="field-input" placeholder="Your name" id="trackedBy"/>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field" style="margin-bottom:0;">
+        <label style="margin-bottom:10px;display:block;"><span class="req">★</span> Current Status</label>
+        <div class="status-group">
+          <div class="radio-opt active" style="flex:1;"><input type="radio" name="status" id="s1" value="Active" checked/><label for="s1" style="width:100%;">✅ Active</label></div>
+          <div class="radio-opt faulty" style="flex:1;"><input type="radio" name="status" id="s2" value="Faulty"/><label for="s2" style="width:100%;">❌ Faulty</label></div>
+          <div class="radio-opt warn" style="flex:1;"><input type="radio" name="status" id="s3" value="Maintenance"/><label for="s3" style="width:100%;">🔧 Maintenance</label></div>
+          <div class="radio-opt blue" style="flex:1;"><input type="radio" name="status" id="s4" value="Replaced"/><label for="s4" style="width:100%;">🔄 Replaced</label></div>
+          <div class="radio-opt gray" style="flex:1;"><input type="radio" name="status" id="s5" value="Decommissioned"/><label for="s5" style="width:100%;">🗑 Decommissioned</label></div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:20px;">
+        <label>Remarks / Notes</label>
+        <textarea class="field-input" placeholder="Any additional notes about this system, issues, upgrades, history..." id="remarks"></textarea>
+      </div>
+
+      <!-- Buttons -->
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost" onclick="resetForm()">↺ Reset</button>
+        <button type="submit" class="btn btn-primary">⬆ Submit Entry</button>
+        <button type="button" class="btn btn-success" id="exportBtn" onclick="exportExcel()">📥 Export Excel</button>
+        <button type="button" class="btn btn-danger" onclick="clearAllRecords()" title="Delete all saved records">🗑 Clear All</button>
+      </div>
+
+      <!-- Info -->
+      <div class="info-box">
+        <div class="info-title">📌 How Your Master File Grows</div>
+        Records are <b>auto-saved in your browser</b> — open this file anytime and your data is still here.<br>
+        Click <b>Export Excel</b> to download <code>PMCH_Master_Tracker.xlsx</code> with every record ever entered.<br>
+        <span style="color:var(--text-dim);">Use <b>Clear All</b> only after exporting — it wipes the browser memory.</span>
+      </div>
+    </div>
+
+  </form>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let allRecords   = JSON.parse(localStorage.getItem('pmchAllRecords') || '[]');
+let sessionCount = 0;
+
+function saveToStorage() {
+  try { localStorage.setItem('pmchAllRecords', JSON.stringify(allRecords)); } catch(e) {}
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+function genTicket() {
+  const n = new Date(), r = Math.floor(Math.random()*9000)+1000;
+  return `TKT-${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}-${r}`;
+}
+let currentTicket = genTicket();
+document.getElementById('ticketId').textContent = currentTicket;
+document.getElementById('setupDate').value = new Date().toISOString().split('T')[0];
+
+function updateStats() {
+  document.getElementById('statTotal').textContent   = allRecords.length;
+  document.getElementById('statSession').textContent = sessionCount;
+}
+updateStats();
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.innerHTML = (isError ? '⚠ ' : '✅ ') + msg;
+  Object.assign(t.style, {
+    display: 'flex',
+    color:      isError ? '#fca5a5' : '#6ee7b7',
+    border:     `1px solid ${isError ? 'rgba(239,68,68,0.35)' : 'rgba(6,214,160,0.3)'}`,
+    background: isError ? 'rgba(239,68,68,0.12)' : 'rgba(6,214,160,0.1)',
+  });
+  setTimeout(() => t.style.display = 'none', 4000);
+}
+
+// ── Submit ─────────────────────────────────────────────────────────────────
+document.getElementById('trackerForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const serial = document.getElementById('serialNo').value.trim();
+  const asset  = document.getElementById('assetTag').value.trim();
+  if (!serial || !asset) { showToast('Serial Number & Asset Tag are required!', true); return; }
+
+  const record = {
+    no:           allRecords.length + 1,
+    ticketId:     currentTicket,
+    serialNo:     serial,
+    assetTag:     asset,
+    deviceType:   document.getElementById('deviceType').value,
+    brand:        document.getElementById('brand').value,
+    model:        document.getElementById('model').value,
+    mac:          document.getElementById('mac').value,
+    building:     document.getElementById('building').value,
+    floor:        document.getElementById('floor').value,
+    room:         document.getElementById('room').value,
+    department:   document.getElementById('department').value,
+    desk:         document.getElementById('desk').value,
+    cpu:          document.getElementById('cpu').value,
+    ram:          document.getElementById('ram').value,
+    storage:      document.getElementById('storage').value,
+    os:           document.getElementById('os').value,
+    monitor:      document.getElementById('monitor').value,
+    ip:           document.getElementById('ip').value,
+    setupDate:    document.getElementById('setupDate').value,
+    purchaseDate: document.getElementById('purchaseDate').value,
+    warranty:     document.getElementById('warranty').value,
+    assignedTo:   document.getElementById('assignedTo').value,
+    empId:        document.getElementById('empId').value,
+    contact:      document.getElementById('contact').value,
+    trackedBy:    document.getElementById('trackedBy').value,
+    status:       document.querySelector('input[name="status"]:checked').value,
+    remarks:      document.getElementById('remarks').value,
+    entryDate:    new Date().toLocaleString(),
+  };
+
+  allRecords.push(record);
+  sessionCount++;
+  saveToStorage();
+  updateStats();
+  showToast(`Entry #${record.no} saved! Session: ${sessionCount} · Total: ${allRecords.length}`);
+  resetForm();
+});
+
+// ── Reset ──────────────────────────────────────────────────────────────────
+function resetForm() {
+  document.getElementById('trackerForm').reset();
+  document.getElementById('setupDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('s1').checked = true;
+  currentTicket = genTicket();
+  document.getElementById('ticketId').textContent = currentTicket;
+}
+
+// ── Export Excel ───────────────────────────────────────────────────────────
+function exportExcel() {
+  if (!allRecords.length) { showToast('No records to export! Add at least one entry first.', true); return; }
+
+  const btn = document.getElementById('exportBtn');
+  btn.textContent = '⏳ Exporting...';
+  btn.disabled = true;
+
+  try {
+    const HEADERS = [
+      '#','Ticket ID','Serial No.','Asset Tag','Device Type','Brand','Model','MAC Address',
+      'Building / Block','Floor','Room / Cabin','Department','Desk / Position',
+      'CPU','RAM','Storage','OS','Monitor','IP Address',
+      'Setup Date','Purchase Date','Warranty Expiry',
+      'Assigned To','Employee ID','Contact','Tracked By','Status','Remarks','Entry Date/Time'
+    ];
+
+    const wsData = [HEADERS];
+    allRecords.forEach((r, idx) => {
+      wsData.push([
+        idx+1, r.ticketId, r.serialNo, r.assetTag, r.deviceType, r.brand, r.model, r.mac,
+        r.building, r.floor, r.room, r.department, r.desk,
+        r.cpu, r.ram, r.storage, r.os, r.monitor, r.ip,
+        r.setupDate, r.purchaseDate, r.warranty,
+        r.assignedTo, r.empId, r.contact, r.trackedBy, r.status, r.remarks, r.entryDate||''
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    ws['!cols'] = [
+      {wch:4},{wch:22},{wch:20},{wch:16},{wch:14},{wch:12},{wch:20},{wch:18},
+      {wch:18},{wch:14},{wch:12},{wch:20},{wch:18},
+      {wch:20},{wch:8},{wch:14},{wch:16},{wch:10},{wch:14},
+      {wch:12},{wch:12},{wch:12},
+      {wch:20},{wch:12},{wch:16},{wch:16},{wch:14},{wch:30},{wch:20}
+    ];
+
+    ws['!freeze'] = { xSplit:0, ySplit:1, topLeftCell:'A2', state:'frozen' };
+
+    // Style header
+    for (let C = 0; C < HEADERS.length; C++) {
+      const ref = XLSX.utils.encode_cell({r:0, c:C});
+      if (!ws[ref]) continue;
+      ws[ref].s = {
+        font: { bold:true, color:{rgb:'FFFFFF'}, sz:11 },
+        fill: { fgColor:{rgb:'1A3A6E'} },
+        alignment: { horizontal:'center', vertical:'center', wrapText:true },
+        border: { bottom: { style:'medium', color:{rgb:'3B82F6'} } }
+      };
+    }
+
+    // Zebra + status colours
+    allRecords.forEach((r, idx) => {
+      const row = idx + 1;
+      const isEven = idx % 2 === 1;
+      const statusColors = {
+        'Active':         {fg:'004D26',bg:'06D6A0'},
+        'Faulty':         {fg:'4D0010',bg:'EF4444'},
+        'Maintenance':    {fg:'4D3000',bg:'F59E0B'},
+        'Replaced':       {fg:'00204D',bg:'60A5FA'},
+        'Decommissioned': {fg:'1E1E1E',bg:'94A3B8'},
+      };
+      const sc = statusColors[r.status];
+      const sRef = XLSX.utils.encode_cell({r:row, c:26});
+      if (ws[sRef] && sc) ws[sRef].s = { font:{bold:true,color:{rgb:sc.fg}}, fill:{fgColor:{rgb:sc.bg}}, alignment:{horizontal:'center'} };
+
+      if (isEven) {
+        for (let C = 0; C < HEADERS.length; C++) {
+          if (C === 26) continue;
+          const ref = XLSX.utils.encode_cell({r:row, c:C});
+          if (!ws[ref]) ws[ref] = {v:'',t:'s'};
+          if (!ws[ref].s) ws[ref].s = {};
+          ws[ref].s.fill = { fgColor:{rgb:'0D1A2E'} };
+        }
+      }
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Asset Records');
+
+    // Summary sheet
+    const counts = { Active:0, Faulty:0, Maintenance:0, Replaced:0, Decommissioned:0 };
+    const depts = {};
+    const brands = {};
+    allRecords.forEach(r => {
+      if (counts[r.status] !== undefined) counts[r.status]++;
+      depts[r.department]  = (depts[r.department]||0)+1;
+      brands[r.brand]      = (brands[r.brand]||0)+1;
+    });
+
+    const summaryData = [
+      ['PMCH SYSTEM ASSET TRACKER — SUMMARY REPORT'],
+      ['Generated', new Date().toLocaleString()], [''],
+      ['OVERVIEW',''],
+      ['Total Records',    allRecords.length],
+      ['✅ Active',        counts.Active],
+      ['❌ Faulty',        counts.Faulty],
+      ['🔧 Maintenance',   counts.Maintenance],
+      ['🔄 Replaced',      counts.Replaced],
+      ['🗑 Decommissioned',counts.Decommissioned],
+      [''],
+      ['BY DEPARTMENT','COUNT'],
+      ...Object.entries(depts).sort((a,b)=>b[1]-a[1]).map(([d,c])=>[d||'(not set)',c]),
+      [''],
+      ['BY BRAND','COUNT'],
+      ...Object.entries(brands).sort((a,b)=>b[1]-a[1]).map(([b,c])=>[b||'(not set)',c]),
+    ];
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+    wsSummary['!cols'] = [{wch:28},{wch:16}];
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+    XLSX.writeFile(wb, 'PMCH_Master_Tracker.xlsx', { bookType:'xlsx', cellStyles:true });
+
+    allRecords = allRecords.map((r,i) => ({...r, no:i+1}));
+    saveToStorage();
+    sessionCount = 0;
+    updateStats();
+    showToast(`✅ Exported ${allRecords.length} records to PMCH_Master_Tracker.xlsx`);
+
+  } catch(err) {
+    showToast('Export failed: ' + err.message, true);
+  } finally {
+    btn.innerHTML = '📥 Export Excel';
+    btn.disabled = false;
+  }
+}
+
+// ── Clear all ──────────────────────────────────────────────────────────────
+function clearAllRecords() {
+  if (!allRecords.length) { showToast('Nothing to clear.', true); return; }
+  if (!confirm(`Delete ALL ${allRecords.length} saved records? Make sure you exported first!`)) return;
+  allRecords = []; sessionCount = 0;
+  localStorage.removeItem('pmchAllRecords');
+  updateStats();
+  showToast('All records cleared. Starting fresh.');
+}
+</script>
+</body>
+</html>
