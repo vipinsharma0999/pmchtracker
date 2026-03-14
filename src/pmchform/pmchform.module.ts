@@ -4,6 +4,6 @@ import { PmchformService } from './pmchform.service';
 
 @Module({
   controllers: [PmchformController],
-  providers: [PmchformService]
+  providers: [PmchformService],
 })
 export class PmchformModule {}

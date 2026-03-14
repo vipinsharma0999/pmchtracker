@@ -6,6 +6,8 @@ import type { Response } from 'express';
 export class PmchformController {
   @Get()
   getForm(@Res() res: Response) {
-    res.sendFile(join(process.cwd(), 'src', 'pmchform', 'views', 'pmchform.html'));
+    res.sendFile(
+      join(process.cwd(), 'src', 'pmchform', 'views', 'pmchform.html'),
+    );
   }
 }

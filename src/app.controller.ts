@@ -4,12 +4,10 @@ import { join } from 'path';
 
 @Controller()
 export class AppController {
-
   @Get()
   getLogin(@Res() res: Response) {
     res.sendFile(join(process.cwd(), 'src', 'view', 'login.html'));
   }
-
   @Post('login')
   handleLogin(@Body() body: any, @Res() res: Response) {
     const { username, password } = body;
