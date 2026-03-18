@@ -1,1217 +1,696 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PMCH · Asset Tracker</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-      :root {
-        --bg: #060a12;
-        --surface: #0d1424;
-        --surface2: #111c30;
-        --border: rgba(99, 160, 255, 0.12);
-        --border-h: rgba(99, 160, 255, 0.35);
-        --accent: #3b82f6;
-        --accent2: #06d6a0;
-        --accent3: #f59e0b;
-        --danger: #ef4444;
-        --text: #e2eaf8;
-        --text-muted: #6b84a8;
-        --text-dim: #3a4f6a;
-        --glow: rgba(59, 130, 246, 0.15);
-        --glow2: rgba(6, 214, 160, 0.12);
-      }
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
-      body::before {
-        content: ''; position: fixed; inset: 0; z-index: 0;
-        background: radial-gradient(ellipse 80% 50% at 20% -10%, rgba(56, 127, 243, 0.185) 0%, transparent 60%),
-          radial-gradient(ellipse 60% 40% at 80% 110%, rgba(6,214,160,0.06) 0%, transparent 60%),
-          radial-gradient(ellipse 40% 30% at 50% 50%, rgba(209, 100, 10, 0.226) 0%, transparent 70%);
-        pointer-events: none;
-      }
-      body::after {
-        content: ''; position: fixed; inset: 0; z-index: 0;
-        background-image: linear-gradient(rgba(59,130,246,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.025) 1px, transparent 1px);
-        background-size: 48px 48px; pointer-events: none;
-        mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-      }
-      .wrap { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 40px 24px 80px; }
-      #tab-form { max-width: 960px; margin: 0 auto; }
-      .header { display: flex; align-items: center; gap: 20px; padding-bottom: 32px; margin-bottom: 36px; border-bottom: 1px solid var(--border); animation: slideDown 0.7s cubic-bezier(0.16,1,0.3,1) both; }
-      .logo { width: 56px; height: 56px; border-radius: 16px; flex-shrink: 0; background: linear-gradient(135deg, #1d4ed8, #0ea5e9); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px; color: white; letter-spacing: 0.5px; box-shadow: 0 0 0 1px rgba(99,160,255,0.2), 0 8px 32px rgba(59,130,246,0.25), 0 0 60px rgba(59,130,246,0.1); position: relative; }
-      .logo::after { content: ''; position: absolute; inset: -1px; border-radius: 17px; background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent); pointer-events: none; }
-      .header-text h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: 3px; text-transform: uppercase; color: #fff; line-height: 1; }
-      .header-text p { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 6px; }
-      .header-right { margin-left: auto; text-align: right; }
-      .ticket-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 1px; margin-bottom: 8px; }
-      .live-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 100px; font-size: 10px; font-weight: 500; font-family: 'JetBrains Mono', monospace; letter-spacing: 1.5px; background: rgba(6,214,160,0.08); border: 1px solid rgba(6,214,160,0.2); color: var(--accent2); }
-      .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); animation: pulse 2s infinite; }
-      .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
-      .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; position: relative; overflow: hidden; animation: fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both; }
-      .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.6; }
-      .stat-card:last-child::before { background: linear-gradient(90deg, transparent, var(--accent2), transparent); }
-      .stat-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 42px; line-height: 1; background: linear-gradient(135deg, #fff, #a8c0e8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-      .stat-card:last-child .stat-num { background: linear-gradient(135deg, var(--accent2), #a8f0dc); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-      .stat-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; }
-      .stat-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 36px; opacity: 0.07; }
-      .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px 32px; margin-bottom: 20px; position: relative; overflow: hidden; animation: fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both; transition: border-color 0.3s; }
-      .card:hover { border-color: var(--border-h); }
-      .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(99,160,255,0.4) 50%, transparent 100%); }
-      .card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
-      .card-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border: 1px solid rgba(59,130,246,0.2); background: rgba(59,130,246,0.08); }
-      .card-icon.green { border-color: rgba(6,214,160,0.2); background: rgba(6,214,160,0.08); }
-      .card-icon.amber { border-color: rgba(245,158,11,0.2); background: rgba(245,158,11,0.08); }
-      .card-icon.purple { border-color: rgba(167,139,250,0.2); background: rgba(167,139,250,0.08); }
-      .card-icon.red { border-color: rgba(239,68,68,0.2); background: rgba(239,68,68,0.08); }
-      .card-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; color: #fff; }
-      .card-sub { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
-      .req-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; margin-bottom: 20px; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); color: #7baef8; }
-      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-      .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-      .col-2 { grid-column: span 2; }
-      .divider { height: 1px; background: var(--border); margin: 20px 0; }
-      .field { display: flex; flex-direction: column; gap: 6px; }
-      .field label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
-      .field label .req { color: var(--accent); margin-right: 4px; }
-      .field-input { width: 100%; padding: 11px 14px; border-radius: 10px; outline: none; background: rgba(0,0,0,0.35); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; transition: all 0.2s; -webkit-appearance: none; appearance: none; }
-      .field-input:focus { border-color: rgba(59,130,246,0.5); box-shadow: 0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.05); background: rgba(59,130,246,0.04); }
-      .field-input::placeholder { color: var(--text-dim); font-size: 13px; }
-      select.field-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b84a8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
-      select.field-input option { background: #0d1424; }
-      textarea.field-input { resize: vertical; min-height: 90px; line-height: 1.6; }
-      input[type='date'].field-input::-webkit-calendar-picker-indicator { filter: invert(0.5) sepia(1) saturate(2) hue-rotate(190deg); cursor: pointer; }
-      .status-group { display: flex; gap: 8px; flex-wrap: wrap; }
-      .radio-opt input[type='radio'] { display: none; }
-      .radio-opt label { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s; white-space: nowrap; border: 1px solid var(--border); color: var(--text-muted); font-family: 'DM Sans', sans-serif; }
-      .radio-opt label:hover { border-color: var(--border-h); color: var(--text); }
-      .radio-opt.active input:checked + label { border-color: #06d6a0; color: #06d6a0; background: rgba(6,214,160,0.08); box-shadow: 0 0 16px rgba(6,214,160,0.1); }
-      .radio-opt.faulty input:checked + label { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.08); box-shadow: 0 0 16px rgba(239,68,68,0.1); }
-      .radio-opt.warn input:checked + label { border-color: #f59e0b; color: #f59e0b; background: rgba(245,158,11,0.08); box-shadow: 0 0 16px rgba(245,158,11,0.1); }
-      .radio-opt.blue input:checked + label { border-color: #60a5fa; color: #60a5fa; background: rgba(96,165,250,0.08); box-shadow: 0 0 16px rgba(96,165,250,0.1); }
-      .radio-opt.gray input:checked + label { border-color: #94a3b8; color: #94a3b8; background: rgba(148,163,184,0.08); }
-      .btn-row { display: flex; gap: 10px; padding-top: 24px; border-top: 1px solid var(--border); flex-wrap: wrap; }
-      .btn { padding: 13px 22px; border-radius: 12px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; border: none; transition: all 0.2s; outline: none; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-      .btn:active { transform: scale(0.97); }
-      .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
-      .btn-ghost:hover { border-color: var(--border-h); color: var(--text); background: rgba(99,160,255,0.05); }
-      .btn-primary { flex: 1; justify-content: center; background: linear-gradient(135deg, #1d4ed8, #0ea5e9); color: white; box-shadow: 0 4px 20px rgba(59,130,246,0.3), 0 0 0 1px rgba(255,255,255,0.05) inset; }
-      .btn-primary:hover { box-shadow: 0 6px 28px rgba(59,130,246,0.45), 0 0 0 1px rgba(255,255,255,0.08) inset; transform: translateY(-1px); }
-      .btn-success { background: linear-gradient(135deg, #065f46, #059669); color: white; box-shadow: 0 4px 20px rgba(6,214,160,0.2), 0 0 0 1px rgba(255,255,255,0.05) inset; }
-      .btn-success:hover { box-shadow: 0 6px 28px rgba(6,214,160,0.3); transform: translateY(-1px); }
-      .btn-danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #f87171; }
-      .btn-danger:hover { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.45); }
-      .info-box { background: rgba(59,130,246,0.04); border: 1px solid rgba(59,130,246,0.12); border-radius: 14px; padding: 16px 20px; margin-top: 18px; font-size: 13px; color: #7baef8; line-height: 1.8; }
-      .info-box .info-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-      .info-box b { color: #c8dcff; }
-      .info-box code { background: rgba(0,0,0,0.4); border: 1px solid rgba(99,160,255,0.15); padding: 1px 6px; border-radius: 5px; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Asset Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0f1a;--surface:#131929;--surface2:#172035;--border:#1e2d45;
+  --accent:#00c2ff;--accent2:#7b5ea7;--green:#00e5a0;--orange:#ff8c42;--red:#ff4d6d;
+  --text:#e8edf5;--muted:#6b7a99;--sw:248px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow:hidden}
+.sidebar{width:var(--sw);min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 14px;position:fixed;left:0;top:0;bottom:0;z-index:200;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.brand{display:flex;align-items:center;gap:10px;padding:0 8px;margin-bottom:36px}
+.brand-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.brand-name{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;letter-spacing:-0.4px}
+.nav-lbl{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;padding:0 12px;margin-bottom:6px;margin-top:4px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;cursor:pointer;color:var(--muted);font-size:14px;font-weight:500;transition:all .2s;margin-bottom:2px;position:relative;user-select:none}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:rgba(0,194,255,.1);color:var(--accent)}
+.nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:60%;background:var(--accent);border-radius:0 3px 3px 0}
+.nav-icon{font-size:17px;width:22px;text-align:center;flex-shrink:0}
+.rec-badge{margin-left:auto;background:var(--accent);color:#000;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;min-width:24px;text-align:center}
+.sidebar-footer{margin-top:auto;padding-top:16px;border-top:1px solid var(--border)}
+.user-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .2s}
+.user-card:hover{background:var(--surface2)}
+.avatar{width:34px;height:34px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.u-name{font-size:13px;font-weight:600}.u-role{font-size:11px;color:var(--muted)}
+.logout-btn{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:4px;border-radius:6px;transition:color .2s}
+.logout-btn:hover{color:var(--text)}
+.main{margin-left:var(--sw);flex:1;min-height:100vh;display:flex;flex-direction:column;overflow-y:auto;transition:margin-left .3s cubic-bezier(.4,0,.2,1)}
+.topbar{padding:18px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);position:sticky;top:0;z-index:10}
+.page-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700}
+.page-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.btn{padding:9px 18px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;border:none;display:inline-flex;align-items:center;gap:6px}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-green{background:var(--green);color:#000}.btn-green:hover{opacity:.85}
+.btn-export{background:var(--surface2);color:var(--green);border:1px solid rgba(0,229,160,.4)}.btn-export:hover{background:rgba(0,229,160,.08)}
+.btn-clearall{background:var(--surface2);color:var(--red);border:1px solid rgba(255,77,109,.35)}.btn-clearall:hover{background:rgba(255,77,109,.1)}
+.btn-edit{background:rgba(0,194,255,.1);color:var(--accent);border:1px solid rgba(0,194,255,.2);padding:5px 11px;font-size:11px;border-radius:7px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .2s}.btn-edit:hover{background:rgba(0,194,255,.2)}
+.btn-del{background:rgba(255,77,109,.08);color:var(--red);border:1px solid rgba(255,77,109,.2);padding:5px 11px;font-size:11px;border-radius:7px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .2s}.btn-del:hover{background:rgba(255,77,109,.18)}
+.content{padding:26px 32px;flex:1}
+.module-panel{display:none;animation:fadeIn .3s ease both}
+.module-panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.stat-strip{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 22px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between}
+.stat-card::after{content:'';position:absolute;top:-14px;right:-14px;width:80px;height:80px;border-radius:50%;filter:blur(30px);opacity:.14}
+.sc-blue::after{background:var(--accent)}.sc-green::after{background:var(--green)}
+.stat-val{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;line-height:1}
+.sc-blue .stat-val{color:var(--accent)}.sc-green .stat-val{color:var(--green)}
+.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-top:5px}
+.stat-ico{font-size:32px;opacity:.3}
+.view-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:22px}
+.view-tab{padding:14px 20px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;user-select:none;letter-spacing:.5px}
+.view-tab:first-child{border-right:1px solid var(--border)}
+.view-tab:hover{background:var(--surface2);color:var(--text)}
+.view-tab.active{background:var(--surface2);color:var(--accent)}
+.view-tab.active .tab-dot{background:var(--accent)}
+.tab-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background .2s;flex-shrink:0}
+.sub-panel{display:none;animation:fadeIn .25s ease both}
+.sub-panel.active{display:block}
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.form-hdr{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.fh-ico{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.fh-blue{background:rgba(0,194,255,.12)}.fh-purple{background:rgba(123,94,167,.15)}.fh-green{background:rgba(0,229,160,.12)}
+.form-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px}
+.form-sub{font-size:12px;color:var(--muted);margin-top:1px}
+.form-body{padding:24px}
+.fields-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-bottom:20px}
+.field-full{grid-column:1/-1}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px}
+.req{color:var(--muted)}
+input[type=text],select,textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
+input[type=text]:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,194,255,.1)}
 
-      /* ── Records List ── */
-      .search-bar { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
-      .search-input { flex: 1; min-width: 200px; padding: 10px 14px; border-radius: 10px; outline: none; background: rgba(0,0,0,0.35); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; transition: all 0.2s; }
-      .search-input:focus { border-color: rgba(59,130,246,0.5); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-      .search-input::placeholder { color: var(--text-dim); }
-      .filter-select { padding: 10px 36px 10px 14px; border-radius: 10px; outline: none; background: rgba(0,0,0,0.35); border: 1px solid var(--border); color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b84a8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; transition: all 0.2s; }
-      .filter-select option { background: #0d1424; }
+select{cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%236b7a99' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
+select option,select optgroup{background:var(--surface2);color:var(--text)}
+textarea{resize:vertical;min-height:72px}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border)}
+.list-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.list-hdr{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.list-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px}
+.srch{display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 12px}
+.srch input{background:none;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;width:170px}
+.srch input::placeholder{color:var(--muted)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .12s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+tbody td{padding:10px 14px;font-size:13px;color:var(--text);vertical-align:middle}
+td.td-empty{text-align:center;color:var(--muted);padding:48px!important;font-size:13px}
+.action-cell{display:flex;gap:6px;white-space:nowrap}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px}
+.page-info{font-size:12px;color:var(--muted)}
+.page-btns{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.pg-btn{min-width:32px;height:32px;padding:0 10px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .18s;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'DM Sans',sans-serif}
+.pg-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.pg-btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.pg-btn:disabled{opacity:.3;cursor:not-allowed}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:600px;max-width:100%;max-height:90vh;overflow-y:auto;animation:fadeIn .25s ease}
+.modal-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;padding-top:16px;border-top:1px solid var(--border)}
+.toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-weight:600;font-size:13px;z-index:9999;display:none;animation:slideUp .3s ease;max-width:380px}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 
-      .records-table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); }
-      .records-table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 13px; }
-      .records-table thead tr { border-bottom: 1px solid rgba(99,160,255,0.18); background: rgba(59,130,246,0.06); }
-      .records-table thead th { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; padding: 11px 14px; text-align: left; white-space: nowrap; position: sticky; top: 0; background: rgba(13,20,36,0.98); z-index: 2; border-bottom: 1px solid rgba(99,160,255,0.18); }
-      .records-table thead th:first-child { position: sticky; left: 0; z-index: 3; }
-      .records-table tbody tr { border-bottom: 1px solid rgba(99,160,255,0.06); transition: background 0.15s; }
-      .records-table tbody tr:last-child { border-bottom: none; }
-      .records-table tbody tr:hover { background: rgba(59,130,246,0.05); }
-      .records-table td { padding: 11px 14px; color: var(--text); vertical-align: middle; white-space: nowrap; }
-      .records-table td:first-child { position: sticky; left: 0; background: var(--surface); z-index: 1; border-right: 1px solid var(--border); }
-      .records-table tbody tr:hover td:first-child { background: #0f1a2e; }
-      .records-table td.mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); }
-      .records-table td.asset-tag { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); font-weight: 500; }
+/* ── MOBILE TOPBAR HAMBURGER ── */
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;flex-direction:column;gap:5px;transition:background .2s}
+.hamburger:hover{background:var(--surface2)}
+.hamburger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:all .3s ease}
+.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
 
-      .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 500; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px; white-space: nowrap; }
-      .status-pill.Active { background: rgba(6,214,160,0.12); color: #06d6a0; border: 1px solid rgba(6,214,160,0.25); }
-      .status-pill.Faulty { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
-      .status-pill.Maintenance { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
-      .status-pill.Replaced { background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.25); }
-      .status-pill.Decommissioned { background: rgba(148,163,184,0.1); color: #94a3b8; border: 1px solid rgba(148,163,184,0.2); }
+/* drawer overlay */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:190;display:none;opacity:0;transition:opacity .3s ease;backdrop-filter:blur(2px)}
+.drawer-overlay.open{display:block;opacity:1}
 
-      .btn-detail { padding: 6px 14px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 1px; cursor: pointer; border: 1px solid rgba(59,130,246,0.25); background: rgba(59,130,246,0.08); color: #7baef8; transition: all 0.2s; text-transform: uppercase; }
-      .btn-detail:hover { background: rgba(59,130,246,0.18); border-color: rgba(59,130,246,0.5); color: #a8ceff; }
-      .btn-del-row { padding: 6px 10px; border-radius: 8px; font-size: 11px; cursor: pointer; border: 1px solid rgba(239,68,68,0.2); background: transparent; color: #f87171; transition: all 0.2s; margin-left: 6px; }
-      .btn-del-row:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.45); }
+@media(max-width:768px){
+  body{overflow-x:hidden}
+  .sidebar{transform:translateX(-100%);z-index:200;width:280px;box-shadow:4px 0 40px rgba(0,0,0,.5)}
+  .sidebar.drawer-open{transform:translateX(0)}
+  .main{margin-left:0!important}
+  .hamburger{display:flex}
+  .topbar{padding:14px 16px;gap:12px}
+  .topbar-right-group{display:flex;align-items:center;gap:10px}
+  .page-title{font-size:16px}
+  .page-sub{font-size:11px}
+  .btn-export,.btn-clearall{font-size:11px;padding:7px 10px}
+  .content{padding:16px}
+  .stat-strip{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .stat-card{padding:14px 16px}
+  .stat-val{font-size:26px}
+  .stat-lbl{font-size:9px}
+  .stat-ico{font-size:24px}
+  .view-tab{padding:12px 10px;font-size:11px;gap:5px}
+  .fields-grid{grid-template-columns:1fr!important}
+  .field-full{grid-column:1/-1}
+  .form-body{padding:16px}
+  .form-hdr{padding:14px 16px}
+  .list-hdr{flex-direction:column;align-items:flex-start;padding:12px 14px}
+  .srch input{width:130px}
+  .tbl-wrap{-webkit-overflow-scrolling:touch}
+  .pagination{flex-direction:column;align-items:flex-start;padding:12px 14px;gap:8px}
+  .modal{padding:20px 16px}
+  .modal-actions{flex-direction:column-reverse}
+  .modal-actions .btn{width:100%;justify-content:center}
+  .form-actions{flex-wrap:wrap}
+  .form-actions .btn{flex:1;justify-content:center}
+}
 
-      .empty-state { text-align: center; padding: 48px 24px; }
-      .empty-icon { font-size: 40px; opacity: 0.3; margin-bottom: 12px; }
-      .empty-text { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; }
-
-      .records-footer { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-top: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; flex-wrap: wrap; gap: 10px; }
-      .pagination { display: flex; align-items: center; gap: 4px; }
-      .pg-btn { min-width: 32px; height: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; cursor: pointer; transition: all 0.18s; display: flex; align-items: center; justify-content: center; }
-      .pg-btn:hover:not(:disabled) { border-color: var(--border-h); color: var(--text); background: rgba(99,160,255,0.07); }
-      .pg-btn.active { background: rgba(59,130,246,0.18); border-color: rgba(59,130,246,0.5); color: #7baef8; font-weight: 700; }
-      .pg-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-      .pg-ellipsis { color: var(--text-dim); font-size: 12px; padding: 0 4px; }
-
-      /* ── Modal ── */
-      .modal-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; padding: 20px; }
-      .modal-overlay.open { display: flex; }
-      .modal { background: var(--surface); border: 1px solid var(--border-h); border-radius: 24px; width: 100%; max-width: 720px; max-height: 90vh; overflow-y: auto; position: relative; animation: modalIn 0.3s cubic-bezier(0.16,1,0.3,1); }
-      @keyframes modalIn { from { opacity: 0; transform: scale(0.94) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-      .modal-header { padding: 24px 28px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; position: sticky; top: 0; background: var(--surface); z-index: 1; border-radius: 24px 24px 0 0; }
-      .modal-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: #fff; }
-      .modal-subtitle { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
-      .modal-close { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s; flex-shrink: 0; }
-      .modal-close:hover { border-color: var(--border-h); color: var(--text); background: rgba(99,160,255,0.08); }
-      .modal-body { padding: 24px 28px 28px; }
-      .modal-section { margin-bottom: 24px; }
-      .modal-section-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
-      .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-      .detail-item { background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
-      .detail-item.full { grid-column: span 2; }
-      .detail-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
-      .detail-value { font-size: 13px; color: var(--text); font-weight: 500; word-break: break-word; }
-      .detail-value.empty { color: var(--text-dim); font-style: italic; font-size: 12px; font-weight: 400; }
-      .detail-value.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); }
-
-      .btn-edit-row { padding: 6px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; border: 1px solid rgba(245,158,11,0.25); background: rgba(245,158,11,0.07); color: #fbbf24; transition: all 0.2s; margin-left: 6px; }
-      .btn-edit-row:hover { background: rgba(245,158,11,0.16); border-color: rgba(245,158,11,0.5); }
-
-      /* ── Edit Modal form fields ── */
-      .edit-field { display: flex; flex-direction: column; gap: 5px; }
-      .edit-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
-      .edit-input { width: 100%; padding: 9px 12px; border-radius: 9px; outline: none; background: rgba(0,0,0,0.35); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; transition: all 0.2s; -webkit-appearance: none; appearance: none; }
-      .edit-input:focus { border-color: rgba(59,130,246,0.5); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); background: rgba(59,130,246,0.04); }
-      .edit-input::placeholder { color: var(--text-dim); font-size: 12px; }
-      select.edit-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b84a8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
-      select.edit-input option { background: #0d1424; }
-      textarea.edit-input { resize: vertical; min-height: 72px; line-height: 1.6; }
-      input[type='date'].edit-input::-webkit-calendar-picker-indicator { filter: invert(0.5) sepia(1) saturate(2) hue-rotate(190deg); cursor: pointer; }
-      .edit-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-      .edit-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-      .edit-col2 { grid-column: span 2; }
-      .edit-divider { height: 1px; background: var(--border); margin: 16px 0; }
-      .edit-section-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
-      .edit-modal-footer { display: flex; gap: 10px; padding-top: 20px; border-top: 1px solid var(--border); margin-top: 8px; }
-      .btn-save-edit { flex: 1; justify-content: center; padding: 13px 22px; border-radius: 12px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; border: none; background: linear-gradient(135deg, #065f46, #059669); color: white; box-shadow: 0 4px 20px rgba(6,214,160,0.2); transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
-      .btn-save-edit:hover { box-shadow: 0 6px 28px rgba(6,214,160,0.35); transform: translateY(-1px); }
-      .btn-cancel-edit { padding: 13px 22px; border-radius: 12px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text-muted); transition: all 0.2s; }
-      .btn-cancel-edit:hover { border-color: var(--border-h); color: var(--text); background: rgba(99,160,255,0.05); }
-      .edit-last-modified { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 1px; margin-top: 10px; text-align: center; }
-      #toast { position: fixed; bottom: 28px; right: 28px; z-index: 9999; padding: 14px 22px; border-radius: 14px; font-size: 13px; font-weight: 500; display: none; align-items: center; gap: 10px; max-width: 400px; backdrop-filter: blur(20px); box-shadow: 0 16px 48px rgba(0,0,0,0.4); font-family: 'DM Sans', sans-serif; }
-
-      @keyframes slideDown { from { opacity: 0; transform: translateY(-24px); } to { opacity: 1; transform: translateY(0); } }
-      @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-      @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
-      .card:nth-child(1) { animation-delay: 0.1s; }
-      .card:nth-child(2) { animation-delay: 0.18s; }
-      .card:nth-child(3) { animation-delay: 0.26s; }
-      .card:nth-child(4) { animation-delay: 0.34s; }
-      ::-webkit-scrollbar { width: 6px; }
-      ::-webkit-scrollbar-track { background: var(--bg); }
-      ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
-      ::-webkit-scrollbar-thumb:hover { background: #2a4f7a; }
-
-      .tab-row { display: flex; gap: 4px; margin-bottom: 28px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 14px; padding: 5px; }
-      .tab-btn { flex: 1; padding: 10px 16px; border-radius: 10px; border: none; background: transparent; color: var(--text-muted); font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
-      .tab-btn.active { background: var(--surface2); color: #fff; border: 1px solid var(--border-h); }
-      .tab-pane { display: none; }
-      .tab-pane.active { display: block; }
-    </style>
-  </head>
-  <body>
-    <div id="toast"></div>
-
-    <!-- ── Detail Modal ── -->
-    <div class="modal-overlay" id="detailModal" onclick="closeModal(event)">
-      <div class="modal" id="modalContent">
-        <div class="modal-header">
-          <div>
-            <div class="modal-title" id="modalTitle">Asset Details</div>
-            <div class="modal-subtitle" id="modalSubtitle">Record Information</div>
-          </div>
-          <button class="modal-close" onclick="closeModalDirect()">✕</button>
-        </div>
-        <div class="modal-body" id="modalBody"></div>
-      </div>
+@media(max-width:400px){
+  .stat-strip{grid-template-columns:1fr}
+  .view-tab{font-size:10px;padding:11px 8px}
+}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="brand"><div class="brand-icon">⚡</div><span class="brand-name">AssetTrack</span></div>
+  <div class="nav-lbl">Asset Modules</div>
+  <div class="nav-item active" onclick="switchModule('pc',this)"><span class="nav-icon">🖥️</span>PC Detail<span class="rec-badge" id="cnt-pc">0</span></div>
+  <div class="nav-item" onclick="switchModule('printer',this)"><span class="nav-icon">🖨️</span>Printer Detail<span class="rec-badge" id="cnt-printer">0</span></div>
+  <div class="nav-item" onclick="switchModule('ups',this)"><span class="nav-icon">🔋</span>UPS Detail<span class="rec-badge" id="cnt-ups">0</span></div>
+  <div class="nav-item" onclick="switchModule('mic',this)"><span class="nav-icon">🎤</span>Mic Detail<span class="rec-badge" id="cnt-mic">0</span></div>
+  <div class="nav-item" onclick="switchModule('mobile',this)"><span class="nav-icon">📱</span>Mobile Detail<span class="rec-badge" id="cnt-mobile">0</span></div>
+  <div style="margin-top:18px">
+    <div class="nav-lbl">Actions</div>
+    <div class="nav-item" onclick="exportToExcel()" style="color:var(--green)"><span class="nav-icon">📥</span>Export to Excel</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="avatar">AD</div>
+      <div><div class="u-name">Admin</div><div class="u-role">Asset Manager</div></div>
+      <button class="logout-btn" title="Logout" onclick="window.location.href='login.html'">⎋</button>
     </div>
+  </div>
+</aside>
+<main class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="hamburger" id="hamburgerBtn" onclick="toggleDrawer()" aria-label="Menu"><span></span><span></span><span></span></button>
+      <div><div class="page-title" id="pageTitle">PC Detail</div><div class="page-sub" id="pageSub">Add and manage PC asset records</div></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-export" onclick="exportToExcel()">📥 Export All to Excel</button>
+      <button class="btn btn-clearall" onclick="clearAllData()">🗑 Clear All Data</button>
+    </div>
+  </div>
+  <div class="content">
 
-    <!-- ── Edit Modal ── -->
-    <div class="modal-overlay" id="editModal" onclick="closeEditModal(event)">
-      <div class="modal" style="max-width:780px" id="editModalContent">
-        <div class="modal-header">
-          <div>
-            <div class="modal-title">✏️ Edit Record</div>
-            <div class="modal-subtitle" id="editModalSubtitle">Modifying asset entry</div>
+  <!-- PC MODULE -->
+  <div class="module-panel active" id="mod-pc">
+    <div class="stat-strip">
+      <div class="stat-card sc-blue"><div><div class="stat-val" id="pc-total">0</div><div class="stat-lbl">Total Records Saved</div></div><div class="stat-ico">🖥️</div></div>
+      <div class="stat-card sc-green"><div><div class="stat-val" id="pc-session">0</div><div class="stat-lbl">Added This Session</div></div><div class="stat-ico">✚</div></div>
+    </div>
+    <div class="view-tabs">
+      <div class="view-tab active" id="tab-pc-add" onclick="switchTab('pc','add')"><span class="tab-dot"></span>📋 ADD ENTRY</div>
+      <div class="view-tab" id="tab-pc-list" onclick="switchTab('pc','list')"><span class="tab-dot"></span>📑 RECORDS LIST</div>
+    </div>
+    <div class="sub-panel active" id="sub-pc-add">
+      <div class="form-card">
+        <div class="form-hdr"><div class="fh-ico fh-blue">🖥️</div><div><div class="form-title">New PC Record</div><div class="form-sub">Fill in the details below</div></div></div>
+        <div class="form-body">
+          <div class="fields-grid">
+            <div class="field"><label>PC Serial No</label><input type="text" id="pc-serial" placeholder="e.g. PC-2024-001"/></div>
+            <div class="field"><label>CPU Serial No</label><input type="text" id="cpu-serial" placeholder="e.g. CPU-XYZ-456"/></div>
+            <div class="field"><label>Keyboard Serial No</label><input type="text" id="kb-serial" placeholder="e.g. KB-001"/></div>
+            <div class="field"><label>Mouse Serial No</label><input type="text" id="mouse-serial" placeholder="e.g. MS-001"/></div>
+            <div class="field"><label>Department</label>
+              <select id="pc-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option></select></div>
+            <div class="field"><label>Location</label>
+              <select id="pc-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
+            <div class="field field-full"><label>Remark / Exact Location</label><textarea id="pc-remark" placeholder="e.g. Reception counter near entrance — Dr. Sharma cabin"></textarea></div>
           </div>
-          <button class="modal-close" onclick="closeEditModalDirect()">✕</button>
-        </div>
-        <div class="modal-body">
-
-          <!-- Section: Device Identity -->
-          <div class="edit-section-title">🖥️ Device Identity</div>
-          <div class="edit-grid-2" style="margin-bottom:16px">
-            <div class="edit-field"><div class="edit-label">★ Serial Number</div><input type="text" class="edit-input" id="e_serialNo" placeholder="e.g. SN-2024-HP-00123" /></div>
-            <div class="edit-field"><div class="edit-label">★ Asset Tag / ID</div><input type="text" class="edit-input" id="e_assetTag" placeholder="e.g. PMCH-IT-0042" /></div>
-            <div class="edit-field"><div class="edit-label">★ Device Type</div>
-              <select class="edit-input" id="e_deviceType">
-                <option value="">— Select Type —</option>
-                <option>Desktop PC</option><option>Laptop</option><option>Server</option><option>Workstation</option><option>Printer</option><option>Scanner</option><option>Network Switch</option><option>UPS</option><option>Other</option>
-              </select>
-            </div>
-            <div class="edit-field"><div class="edit-label">★ Brand</div>
-              <select class="edit-input" id="e_brand">
-                <option value="">— Select Brand —</option>
-                <option>HP</option><option>Dell</option><option>Lenovo</option><option>Acer</option><option>Asus</option><option>Apple</option><option>Samsung</option><option>Other</option>
-              </select>
-            </div>
-            <div class="edit-field"><div class="edit-label">Model</div><input type="text" class="edit-input" id="e_model" placeholder="e.g. HP ProDesk 400 G7" /></div>
-            <div class="edit-field"><div class="edit-label">MAC Address</div><input type="text" class="edit-input" id="e_mac" placeholder="e.g. A1:B2:C3:D4:E5:F6" /></div>
-          </div>
-
-          <div class="edit-divider"></div>
-
-          <!-- Section: Location -->
-          <div class="edit-section-title">📍 Placement & Location</div>
-          <div class="edit-grid-3" style="margin-bottom:16px">
-            <div class="edit-field"><div class="edit-label">★ Building / Block</div>
-              <select class="edit-input" id="e_building">
-                <option value="">— Select Block —</option>
-                <option>Main Building</option><option>OPD Block</option><option>Emergency Block</option><option>ICU Block</option><option>Admin Block</option><option>Lab Block</option><option>Radiology Block</option><option>Operation Theatre</option>
-              </select>
-            </div>
-            <div class="edit-field"><div class="edit-label">★ Floor</div>
-              <select class="edit-input" id="e_floor">
-                <option value="">— Floor —</option>
-                <option>Basement</option><option>Ground Floor</option><option>1st Floor</option><option>2nd Floor</option><option>3rd Floor</option><option>4th Floor</option><option>5th Floor</option>
-              </select>
-            </div>
-            <div class="edit-field"><div class="edit-label">Room / Cabin</div><input type="text" class="edit-input" id="e_room" placeholder="e.g. Room 204" /></div>
-            <div class="edit-field edit-col2"><div class="edit-label">★ Department</div>
-              <select class="edit-input" id="e_department">
-                <option value="">— Select Department —</option>
-                <option>Cardiology</option><option>Neurology</option><option>Orthopedics</option><option>Radiology</option><option>Pathology</option><option>Pharmacy</option><option>HR & Admin</option><option>Finance</option><option>IT Department</option><option>Reception / OPD</option><option>Blood Bank</option><option>NICU / ICU</option><option>Operation Theatre</option><option>Other</option>
-              </select>
-            </div>
-            <div class="edit-field"><div class="edit-label">Desk / Position</div><input type="text" class="edit-input" id="e_desk" placeholder="e.g. Reception Desk 2" /></div>
-          </div>
-
-          <div class="edit-divider"></div>
-
-          <!-- Section: Hardware -->
-          <div class="edit-section-title">⚙️ Hardware Specifications</div>
-          <div class="edit-grid-3" style="margin-bottom:16px">
-            <div class="edit-field"><div class="edit-label">CPU</div><input type="text" class="edit-input" id="e_cpu" placeholder="e.g. Intel Core i5-10400" /></div>
-            <div class="edit-field"><div class="edit-label">RAM</div>
-              <select class="edit-input" id="e_ram">
-                <option value="">— RAM —</option>
-                <option>2 GB</option><option>4 GB</option><option>8 GB</option><option>16 GB</option><option>32 GB</option><option>64 GB</option>
-              </select>
-            </div>
-            <div class="edit-field"><div class="edit-label">Storage</div>
-              <select class="edit-input" id="e_storage">
-                <option value="">— Storage —</option>
-                <option>128 GB SSD</option><option>256 GB SSD</option><option>512 GB SSD</option><option>1 TB HDD</option><option>2 TB HDD</option><option>500 GB HDD</option>
-              </select>
-            </div>
-            <div class="edit-field"><div class="edit-label">OS</div>
-              <select class="edit-input" id="e_os">
-                <option value="">— OS —</option>
-                <option>Windows 11 Pro</option><option>Windows 10 Pro</option><option>Windows 10 Home</option><option>Windows 7</option><option>Ubuntu Linux</option><option>Other</option>
-              </select>
-            </div>
-            <div class="edit-field"><div class="edit-label">Monitor</div>
-              <select class="edit-input" id="e_monitor">
-                <option value="">— Monitor —</option>
-                <option>17 inch</option><option>19 inch</option><option>21 inch</option><option>24 inch</option><option>27 inch</option><option>No Monitor</option>
-              </select>
-            </div>
-            <div class="edit-field"><div class="edit-label">IP Address</div><input type="text" class="edit-input" id="e_ip" placeholder="e.g. 192.168.1.105" /></div>
-            <div class="edit-field"><div class="edit-label">Setup / Install Date</div><input type="date" class="edit-input" id="e_setupDate" /></div>
-            <div class="edit-field"><div class="edit-label">Purchase Date</div><input type="date" class="edit-input" id="e_purchaseDate" /></div>
-            <div class="edit-field"><div class="edit-label">Warranty Expiry</div><input type="date" class="edit-input" id="e_warranty" /></div>
-          </div>
-
-          <div class="edit-divider"></div>
-
-          <!-- Section: Assignment & Status -->
-          <div class="edit-section-title">👤 Assignment & Status</div>
-          <div class="edit-grid-2" style="margin-bottom:16px">
-            <div class="edit-field"><div class="edit-label">Assigned To</div><input type="text" class="edit-input" id="e_assignedTo" placeholder="e.g. Dr. Ramesh Kumar" /></div>
-            <div class="edit-field"><div class="edit-label">Employee ID</div><input type="text" class="edit-input" id="e_empId" placeholder="e.g. EMP-2045" /></div>
-            <div class="edit-field"><div class="edit-label">Contact Number</div><input type="tel" class="edit-input" id="e_contact" placeholder="e.g. +91 98765 43210" /></div>
-            <div class="edit-field"><div class="edit-label">Tracked By (IT Staff)</div><input type="text" class="edit-input" id="e_trackedBy" placeholder="Your name" /></div>
-          </div>
-
-          <div class="edit-field" style="margin-bottom:16px">
-            <div class="edit-label" style="margin-bottom:8px">★ Current Status</div>
-            <div class="status-group">
-              <div class="radio-opt active" style="flex:1"><input type="radio" name="edit_status" id="es1" value="Active" /><label for="es1" style="width:100%">✅ Active</label></div>
-              <div class="radio-opt faulty" style="flex:1"><input type="radio" name="edit_status" id="es2" value="Faulty" /><label for="es2" style="width:100%">❌ Faulty</label></div>
-              <div class="radio-opt warn" style="flex:1"><input type="radio" name="edit_status" id="es3" value="Maintenance" /><label for="es3" style="width:100%">🔧 Maintenance</label></div>
-              <div class="radio-opt blue" style="flex:1"><input type="radio" name="edit_status" id="es4" value="Replaced" /><label for="es4" style="width:100%">🔄 Replaced</label></div>
-              <div class="radio-opt gray" style="flex:1"><input type="radio" name="edit_status" id="es5" value="Decommissioned" /><label for="es5" style="width:100%">🗑 Decommissioned</label></div>
-            </div>
-          </div>
-
-          <div class="edit-field">
-            <div class="edit-label">Remarks / Notes</div>
-            <textarea class="edit-input" id="e_remarks" placeholder="Any notes..."></textarea>
-          </div>
-
-          <div class="edit-modal-footer">
-            <button class="btn-cancel-edit" onclick="closeEditModalDirect()">✕ Cancel</button>
-            <button class="btn-save-edit" onclick="saveEdit()">💾 Save Changes</button>
-          </div>
-          <div class="edit-last-modified" id="editLastModified"></div>
+          <div class="form-actions"><button class="btn btn-ghost" onclick="clearForm('pc')">Clear</button><button class="btn btn-green" onclick="submitRecord('pc')">✓ Save Record</button></div>
         </div>
       </div>
     </div>
-
-    <div class="wrap">
-      <!-- ── Header ── -->
-      <div class="header">
-        <div class="logo">PMCH</div>
-        <div class="header-text">
-          <h1>System Asset Tracker</h1>
-          <p>Prince Medical College & Hospital — IT Department</p>
-        </div>
-        <div class="header-right">
-          <div class="ticket-id" id="ticketId">LOADING...</div>
-          <div class="live-badge"><div class="live-dot"></div>Live System</div>
-        </div>
+    <div class="sub-panel" id="sub-pc-list">
+      <div class="list-card">
+        <div class="list-hdr"><div class="list-title">PC Records <span style="color:var(--muted);font-size:12px;font-weight:400" id="pc-list-count"></span></div><div class="srch">🔍<input type="text" id="srch-pc" placeholder="Search..." oninput="onSearch('pc')"/></div></div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>#</th><th>Date &amp; Time</th><th>PC Serial</th><th>CPU Serial</th><th>Keyboard</th><th>Mouse</th><th>Department</th><th>Location</th><th>Remark</th><th>Actions</th></tr></thead>
+          <tbody id="pc-tbody"></tbody>
+        </table></div>
+        <div class="pagination" id="pc-pagination"></div>
       </div>
-
-      <!-- ── Stats ── -->
-      <div class="stats-grid" style="animation-delay: 0.05s">
-        <div class="stat-card">
-          <div class="stat-icon">📋</div>
-          <div class="stat-num" id="statTotal">0</div>
-          <div class="stat-label">Total Records Saved</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">✨</div>
-          <div class="stat-num" id="statSession">0</div>
-          <div class="stat-label">Added This Session</div>
-        </div>
-      </div>
-
-      <!-- ── Tabs ── -->
-      <div class="tab-row">
-        <button class="tab-btn active" onclick="switchTab('form', this)">📝 Add Entry</button>
-        <button class="tab-btn" onclick="switchTab('records', this)" id="recordsTabBtn">📋 Records List</button>
-      </div>
-
-      <!-- ── TAB: Form ── -->
-      <div class="tab-pane active" id="tab-form">
-        <form id="trackerForm">
-          <!-- Section 1: Device Identity -->
-          <div class="card">
-            <div class="card-header">
-              <div class="card-icon">🖥️</div>
-              <div><div class="card-title">Device Identity</div><div class="card-sub">Serial & Identification</div></div>
-            </div>
-            <div class="req-badge">⚡ Fields marked with ★ are required</div>
-            <div class="grid-2">
-              <div class="field"><label><span class="req">★</span> Serial Number</label><input type="text" class="field-input" placeholder="e.g. SN-2024-HP-00123" id="serialNo" /></div>
-              <div class="field"><label><span class="req">★</span> Asset Tag / ID</label><input type="text" class="field-input" placeholder="e.g. PMCH-IT-0042" id="assetTag" /></div>
-              <div class="field"><label><span class="req">★</span> Device Type</label>
-                <select class="field-input" id="deviceType">
-                  <option value="">— Select Type —</option>
-                  <option>Desktop PC</option><option>Laptop</option><option>Server</option><option>Workstation</option><option>Printer</option><option>Scanner</option><option>Network Switch</option><option>UPS</option><option>Other</option>
-                </select>
-              </div>
-              <div class="field"><label><span class="req">★</span> Brand / Manufacturer</label>
-                <select class="field-input" id="brand">
-                  <option value="">— Select Brand —</option>
-                  <option>HP</option><option>Dell</option><option>Lenovo</option><option>Acer</option><option>Asus</option><option>Apple</option><option>Samsung</option><option>Other</option>
-                </select>
-              </div>
-              <div class="field"><label>Model Name / Number</label><input type="text" class="field-input" placeholder="e.g. HP ProDesk 400 G7" id="model" /></div>
-              <div class="field"><label>MAC Address</label><input type="text" class="field-input" placeholder="e.g. A1:B2:C3:D4:E5:F6" id="mac" /></div>
-            </div>
-          </div>
-
-          <!-- Section 2: Location -->
-          <div class="card">
-            <div class="card-header">
-              <div class="card-icon" style="border-color:rgba(6,214,160,0.2);background:rgba(6,214,160,0.08)">📍</div>
-              <div><div class="card-title">Placement & Location</div><div class="card-sub">Where is this system installed</div></div>
-            </div>
-            <div class="grid-3">
-              <div class="field"><label><span class="req">★</span> Building / Block</label>
-                <select class="field-input" id="building">
-                  <option value="">— Select Block —</option>
-                  <option>Main Building</option><option>OPD Block</option><option>Emergency Block</option><option>ICU Block</option><option>Admin Block</option><option>Lab Block</option><option>Radiology Block</option><option>Operation Theatre</option>
-                </select>
-              </div>
-              <div class="field"><label><span class="req">★</span> Floor</label>
-                <select class="field-input" id="floor">
-                  <option value="">— Floor —</option>
-                  <option>Basement</option><option>Ground Floor</option><option>1st Floor</option><option>2nd Floor</option><option>3rd Floor</option><option>4th Floor</option><option>5th Floor</option>
-                </select>
-              </div>
-              <div class="field"><label>Room / Cabin No.</label><input type="text" class="field-input" placeholder="e.g. Room 204" id="room" /></div>
-              <div class="field col-2"><label><span class="req">★</span> Department</label>
-                <select class="field-input" id="department">
-                  <option value="">— Select Department —</option>
-                  <option>Cardiology</option><option>Neurology</option><option>Orthopedics</option><option>Radiology</option><option>Pathology</option><option>Pharmacy</option><option>HR & Admin</option><option>Finance</option><option>IT Department</option><option>Reception / OPD</option><option>Blood Bank</option><option>NICU / ICU</option><option>Operation Theatre</option><option>Other</option>
-                </select>
-              </div>
-              <div class="field"><label>Desk / Position</label><input type="text" class="field-input" placeholder="e.g. Reception Desk 2" id="desk" /></div>
-            </div>
-          </div>
-
-          <!-- Section 3: Hardware -->
-          <div class="card">
-            <div class="card-header">
-              <div class="card-icon green">⚙️</div>
-              <div><div class="card-title">Hardware Specifications</div><div class="card-sub">System configuration details</div></div>
-            </div>
-            <div class="grid-3">
-              <div class="field"><label>Processor (CPU)</label><input type="text" class="field-input" placeholder="e.g. Intel Core i5-10400" id="cpu" /></div>
-              <div class="field"><label>RAM</label>
-                <select class="field-input" id="ram">
-                  <option value="">— RAM —</option>
-                  <option>2 GB</option><option>4 GB</option><option>8 GB</option><option>16 GB</option><option>32 GB</option><option>64 GB</option>
-                </select>
-              </div>
-              <div class="field"><label>Storage</label>
-                <select class="field-input" id="storage">
-                  <option value="">— Storage —</option>
-                  <option>128 GB SSD</option><option>256 GB SSD</option><option>512 GB SSD</option><option>1 TB HDD</option><option>2 TB HDD</option><option>500 GB HDD</option>
-                </select>
-              </div>
-              <div class="field"><label>Operating System</label>
-                <select class="field-input" id="os">
-                  <option value="">— OS —</option>
-                  <option>Windows 11 Pro</option><option>Windows 10 Pro</option><option>Windows 10 Home</option><option>Windows 7</option><option>Ubuntu Linux</option><option>Other</option>
-                </select>
-              </div>
-              <div class="field"><label>Monitor Size</label>
-                <select class="field-input" id="monitor">
-                  <option value="">— Monitor —</option>
-                  <option>17 inch</option><option>19 inch</option><option>21 inch</option><option>24 inch</option><option>27 inch</option><option>No Monitor</option>
-                </select>
-              </div>
-              <div class="field"><label>IP Address</label><input type="text" class="field-input" placeholder="e.g. 192.168.1.105" id="ip" /></div>
-            </div>
-            <div class="divider"></div>
-            <div class="grid-3">
-              <div class="field"><label><span class="req">★</span> Setup / Install Date</label><input type="date" class="field-input" id="setupDate" /></div>
-              <div class="field"><label>Purchase Date</label><input type="date" class="field-input" id="purchaseDate" /></div>
-              <div class="field"><label>Warranty Expiry</label><input type="date" class="field-input" id="warranty" /></div>
-            </div>
-          </div>
-
-          <!-- Section 4: Assignment & Status -->
-          <div class="card">
-            <div class="card-header">
-              <div class="card-icon amber">👤</div>
-              <div><div class="card-title">Assignment & Status</div><div class="card-sub">User assignment & current condition</div></div>
-            </div>
-            <div class="grid-2">
-              <div class="field"><label>Assigned To</label><input type="text" class="field-input" placeholder="e.g. Dr. Ramesh Kumar" id="assignedTo" /></div>
-              <div class="field"><label>Employee ID</label><input type="text" class="field-input" placeholder="e.g. EMP-2045" id="empId" /></div>
-              <div class="field"><label>Contact Number</label><input type="tel" class="field-input" placeholder="e.g. +91 98765 43210" id="contact" /></div>
-              <div class="field"><label>Tracked By (IT Staff)</label><input type="text" class="field-input" placeholder="Your name" id="trackedBy" /></div>
-            </div>
-            <div class="divider"></div>
-            <div class="field" style="margin-bottom: 0">
-              <label style="margin-bottom: 10px; display: block"><span class="req">★</span> Current Status</label>
-              <div class="status-group">
-                <div class="radio-opt active" style="flex:1"><input type="radio" name="status" id="s1" value="Active" checked /><label for="s1" style="width:100%">✅ Active</label></div>
-                <div class="radio-opt faulty" style="flex:1"><input type="radio" name="status" id="s2" value="Faulty" /><label for="s2" style="width:100%">❌ Faulty</label></div>
-                <div class="radio-opt warn" style="flex:1"><input type="radio" name="status" id="s3" value="Maintenance" /><label for="s3" style="width:100%">🔧 Maintenance</label></div>
-                <div class="radio-opt blue" style="flex:1"><input type="radio" name="status" id="s4" value="Replaced" /><label for="s4" style="width:100%">🔄 Replaced</label></div>
-                <div class="radio-opt gray" style="flex:1"><input type="radio" name="status" id="s5" value="Decommissioned" /><label for="s5" style="width:100%">🗑 Decommissioned</label></div>
-              </div>
-            </div>
-            <div class="field" style="margin-top: 20px">
-              <label>Remarks / Notes</label>
-              <textarea class="field-input" placeholder="Any additional notes about this system, issues, upgrades, history..." id="remarks"></textarea>
-            </div>
-            <div class="btn-row">
-              <button type="button" class="btn btn-ghost" onclick="resetForm()">↺ Reset</button>
-              <button type="submit" class="btn btn-primary">⬆ Submit Entry</button>
-              <button type="button" class="btn btn-success" id="exportBtn" onclick="exportExcel()">📥 Export Excel</button>
-              <button type="button" class="btn btn-danger" onclick="clearAllRecords()" title="Delete all saved records">🗑 Clear All</button>
-            </div>
-            <div class="info-box">
-              <div class="info-title">📌 How Your Master File Grows</div>
-              Records are <b>saved in IndexedDB</b> — more secure than cookies, survives browser cache clears.<br />
-              Click <b>Export Excel</b> to download <code>PMCH_Master_Tracker.xlsx</code> with every record ever entered.<br />
-              <span style="color: var(--text-dim)">Use <b>Clear All</b> only after exporting — it permanently wipes the database.</span>
-            </div>
-          </div>
-        </form>
-      </div>
-
-      <!-- ── TAB: Records ── -->
-      <div class="tab-pane" id="tab-records">
-        <div class="card" style="padding: 24px 28px;">
-          <div class="card-header">
-            <div class="card-icon purple">📋</div>
-            <div><div class="card-title">All Records</div><div class="card-sub" id="recordsCountLabel">Loading...</div></div>
-          </div>
-
-          <div class="search-bar">
-            <input type="text" class="search-input" id="searchInput" placeholder="🔍  Search by serial, asset tag, name, department..." oninput="renderTable(true)" />
-            <select class="filter-select" id="filterStatus" onchange="renderTable(true)">
-              <option value="">All Status</option>
-              <option>Active</option><option>Faulty</option><option>Maintenance</option><option>Replaced</option><option>Decommissioned</option>
-            </select>
-            <select class="filter-select" id="filterDept" onchange="renderTable(true)">
-              <option value="">All Departments</option>
-            </select>
-          </div>
-
-          <div class="records-table-wrap">
-            <table class="records-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Ticket ID</th>
-                  <th>Asset Tag</th>
-                  <th>Serial No.</th>
-                  <th>Device Type</th>
-                  <th>Brand</th>
-                  <th>Model</th>
-                  <th>MAC Address</th>
-                  <th>Building / Block</th>
-                  <th>Floor</th>
-                  <th>Room / Cabin</th>
-                  <th>Department</th>
-                  <th>Desk / Position</th>
-                  <th>CPU</th>
-                  <th>RAM</th>
-                  <th>Storage</th>
-                  <th>OS</th>
-                  <th>Monitor</th>
-                  <th>IP Address</th>
-                  <th>Setup Date</th>
-                  <th>Purchase Date</th>
-                  <th>Warranty Expiry</th>
-                  <th>Assigned To</th>
-                  <th>Employee ID</th>
-                  <th>Contact</th>
-                  <th>Tracked By</th>
-                  <th>Status</th>
-                  <th>Remarks</th>
-                  <th>Entry Date/Time</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="recordsTbody"></tbody>
-            </table>
-            <div id="emptyState" class="empty-state" style="display:none">
-              <div class="empty-icon">📭</div>
-              <div class="empty-text">No records found</div>
-            </div>
-          </div>
-          <div class="records-footer">
-            <span id="tableFooterLeft">0 records</span>
-            <div class="pagination" id="pagination"></div>
-            <span id="tableFooterRight"></span>
-          </div>
-        </div>
-      </div>
-
     </div>
+  </div>
 
-    <script>
-      // ── IndexedDB Setup ─────────────────────────────────────────────────────
-      // IndexedDB survives cookie/cache clears unlike localStorage
-      let allRecords = [];
-      let sessionCount = 0;
-      let db = null;
-      const DB_NAME = 'PMCH_AssetTracker';
-      const DB_VERSION = 1;
-      const STORE = 'records';
-
-      function openDB() {
-        return new Promise((resolve, reject) => {
-          const req = indexedDB.open(DB_NAME, DB_VERSION);
-          req.onupgradeneeded = e => {
-            const d = e.target.result;
-            if (!d.objectStoreNames.contains(STORE)) {
-              d.createObjectStore(STORE, { keyPath: 'idbKey', autoIncrement: true });
-            }
-          };
-          req.onsuccess = e => resolve(e.target.result);
-          req.onerror = () => reject(req.error);
-        });
-      }
-
-      function loadAllFromDB() {
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE, 'readonly');
-          const req = tx.objectStore(STORE).getAll();
-          req.onsuccess = () => resolve(req.result || []);
-          req.onerror = () => reject(req.error);
-        });
-      }
-
-      function saveRecordToDB(record) {
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE, 'readwrite');
-          const req = tx.objectStore(STORE).add(record);
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        });
-      }
-
-      function deleteRecordFromDB(idbKey) {
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE, 'readwrite');
-          const req = tx.objectStore(STORE).delete(idbKey);
-          req.onsuccess = () => resolve();
-          req.onerror = () => reject(req.error);
-        });
-      }
-
-      function clearAllFromDB() {
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE, 'readwrite');
-          const req = tx.objectStore(STORE).clear();
-          req.onsuccess = () => resolve();
-          req.onerror = () => reject(req.error);
-        });
-      }
-
-      // ── Init: open DB, load records, then boot UI ──
-      openDB().then(async d => {
-        db = d;
-        // Migrate any old localStorage data into IndexedDB once
-        const oldData = localStorage.getItem('pmchAllRecords');
-        if (oldData) {
-          try {
-            const old = JSON.parse(oldData);
-            if (old.length > 0) {
-              for (const r of old) { await saveRecordToDB(r); }
-              localStorage.removeItem('pmchAllRecords');
-              showToast(`Migrated ${old.length} records from old storage to secure IndexedDB ✅`);
-            }
-          } catch(e) {}
-        }
-        allRecords = await loadAllFromDB();
-        updateStats();
-        initUI();
-      }).catch(err => {
-        showToast('Storage init failed: ' + err.message, true);
-        // Fallback to localStorage if IndexedDB fails
-        allRecords = JSON.parse(localStorage.getItem('pmchAllRecords') || '[]');
-        updateStats();
-        initUI();
-      });
-
-      function genTicket() {
-        const n = new Date(), r = Math.floor(Math.random()*9000)+1000;
-        return `TKT-${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}-${r}`;
-      }
-      let currentTicket = genTicket();
-
-      function initUI() {
-        document.getElementById('ticketId').textContent = currentTicket;
-        document.getElementById('setupDate').value = new Date().toISOString().split('T')[0];
-        updateStats();
-      }
-
-      // Run initUI immediately for fields that don't need DB
-      document.getElementById('ticketId').textContent = currentTicket;
-      document.getElementById('setupDate').value = new Date().toISOString().split('T')[0];
-
-      function updateStats() {
-        document.getElementById('statTotal').textContent = allRecords.length;
-        document.getElementById('statSession').textContent = sessionCount;
-      }
-      updateStats();
-
-      // ── Tabs ──
-      function switchTab(tab, btn) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById('tab-' + tab).classList.add('active');
-        if (tab === 'records') { populateFilters(); renderTable(true); }
-      }
-
-      // ── Toast ──
-      function showToast(msg, isError = false) {
-        const t = document.getElementById('toast');
-        t.innerHTML = (isError ? '⚠ ' : '✅ ') + msg;
-        Object.assign(t.style, { display:'flex', color: isError ? '#fca5a5':'#6ee7b7', border:`1px solid ${isError?'rgba(239,68,68,0.35)':'rgba(6,214,160,0.3)'}`, background: isError?'rgba(239,68,68,0.12)':'rgba(6,214,160,0.1)' });
-        setTimeout(() => t.style.display='none', 4000);
-      }
-
-      // ── Submit ──
-      document.getElementById('trackerForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const serial = document.getElementById('serialNo').value.trim();
-        const asset = document.getElementById('assetTag').value.trim();
-        if (!serial || !asset) { showToast('Serial Number & Asset Tag are required!', true); return; }
-        const record = {
-          no: allRecords.length + 1, ticketId: currentTicket,
-          serialNo: serial, assetTag: asset,
-          deviceType: document.getElementById('deviceType').value,
-          brand: document.getElementById('brand').value,
-          model: document.getElementById('model').value,
-          mac: document.getElementById('mac').value,
-          building: document.getElementById('building').value,
-          floor: document.getElementById('floor').value,
-          room: document.getElementById('room').value,
-          department: document.getElementById('department').value,
-          desk: document.getElementById('desk').value,
-          cpu: document.getElementById('cpu').value,
-          ram: document.getElementById('ram').value,
-          storage: document.getElementById('storage').value,
-          os: document.getElementById('os').value,
-          monitor: document.getElementById('monitor').value,
-          ip: document.getElementById('ip').value,
-          setupDate: document.getElementById('setupDate').value,
-          purchaseDate: document.getElementById('purchaseDate').value,
-          warranty: document.getElementById('warranty').value,
-          assignedTo: document.getElementById('assignedTo').value,
-          empId: document.getElementById('empId').value,
-          contact: document.getElementById('contact').value,
-          trackedBy: document.getElementById('trackedBy').value,
-          status: document.querySelector('input[name="status"]:checked').value,
-          remarks: document.getElementById('remarks').value,
-          entryDate: new Date().toLocaleString()
-        };
-        try {
-          const key = await saveRecordToDB(record);
-          record.idbKey = key;
-          allRecords.push(record);
-          sessionCount++;
-          updateStats();
-          showToast(`Entry #${record.no} saved! Session: ${sessionCount} · Total: ${allRecords.length}`);
-          resetForm();
-        } catch(err) {
-          showToast('Save failed: ' + err.message, true);
-        }
-      });
-
-      function resetForm() {
-        document.getElementById('trackerForm').reset();
-        document.getElementById('setupDate').value = new Date().toISOString().split('T')[0];
-        document.getElementById('s1').checked = true;
-        currentTicket = genTicket();
-        document.getElementById('ticketId').textContent = currentTicket;
-      }
-
-      // ── Populate department filter ──
-      function populateFilters() {
-        const depts = [...new Set(allRecords.map(r => r.department).filter(Boolean))].sort();
-        const sel = document.getElementById('filterDept');
-        const cur = sel.value;
-        sel.innerHTML = '<option value="">All Departments</option>';
-        depts.forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o); });
-        sel.value = cur;
-      }
-
-      // ── Pagination state ──
-      const PAGE_SIZE = 50;
-      let currentPage = 1;
-      let lastFiltered = [];
-
-      // ── Render table ──
-      function renderTable(resetPage) {
-        if (resetPage) currentPage = 1;
-        const query = document.getElementById('searchInput').value.toLowerCase();
-        const statusF = document.getElementById('filterStatus').value;
-        const deptF = document.getElementById('filterDept').value;
-
-        // Filter
-        let filtered = allRecords.filter(r => {
-          if (statusF && r.status !== statusF) return false;
-          if (deptF && r.department !== deptF) return false;
-          if (query) {
-            const haystack = [r.serialNo, r.assetTag, r.assignedTo, r.department, r.brand, r.model, r.ip, r.building, r.ticketId, r.cpu, r.os, r.trackedBy, r.empId, r.contact].join(' ').toLowerCase();
-            if (!haystack.includes(query)) return false;
-          }
-          return true;
-        });
-
-        // Sort latest first by entryDate
-        filtered.sort((a, b) => {
-          const da = a.entryDate ? new Date(a.entryDate) : new Date(0);
-          const db = b.entryDate ? new Date(b.entryDate) : new Date(0);
-          return db - da;
-        });
-
-        lastFiltered = filtered;
-
-        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-        if (currentPage > totalPages) currentPage = totalPages;
-
-        const start = (currentPage - 1) * PAGE_SIZE;
-        const pageRecords = filtered.slice(start, start + PAGE_SIZE);
-
-        const tbody = document.getElementById('recordsTbody');
-        const empty = document.getElementById('emptyState');
-        const wrap = document.querySelector('.records-table-wrap');
-
-        document.getElementById('recordsCountLabel').textContent = `${allRecords.length} total record${allRecords.length !== 1 ? 's' : ''}`;
-        const fromTo = filtered.length > 0 ? ` · showing ${start+1}–${Math.min(start+PAGE_SIZE, filtered.length)}` : '';
-        document.getElementById('tableFooterLeft').textContent = `${filtered.length} record${filtered.length !== 1 ? 's' : ''}${fromTo}`;
-        document.getElementById('tableFooterRight').textContent = query || statusF || deptF ? `filtered from ${allRecords.length} total` : `sorted: latest first`;
-
-        if (filtered.length === 0) {
-          tbody.innerHTML = '';
-          empty.style.display = 'block';
-          wrap.style.borderBottom = 'none';
-        } else {
-          empty.style.display = 'none';
-          wrap.style.borderBottom = '';
-          const d = (val) => val ? val : '<span style="color:var(--text-dim)">—</span>';
-          tbody.innerHTML = pageRecords.map((r, i) => {
-            const idx = allRecords.indexOf(r);
-            const rowNum = start + i + 1;
-            return `
-            <tr>
-              <td class="mono">${rowNum}</td>
-              <td class="mono" style="color:var(--accent);font-size:11px">${r.ticketId || '—'}</td>
-              <td class="asset-tag">${d(r.assetTag)}</td>
-              <td class="mono">${d(r.serialNo)}</td>
-              <td>${d(r.deviceType)}</td>
-              <td>${d(r.brand)}</td>
-              <td>${d(r.model)}</td>
-              <td class="mono" style="font-size:11px">${d(r.mac)}</td>
-              <td>${d(r.building)}</td>
-              <td>${d(r.floor)}</td>
-              <td>${d(r.room)}</td>
-              <td>${d(r.department)}</td>
-              <td>${d(r.desk)}</td>
-              <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis">${d(r.cpu)}</td>
-              <td>${d(r.ram)}</td>
-              <td>${d(r.storage)}</td>
-              <td>${d(r.os)}</td>
-              <td>${d(r.monitor)}</td>
-              <td class="mono" style="font-size:11px">${d(r.ip)}</td>
-              <td class="mono" style="font-size:11px">${d(r.setupDate)}</td>
-              <td class="mono" style="font-size:11px">${d(r.purchaseDate)}</td>
-              <td class="mono" style="font-size:11px">${d(r.warranty)}</td>
-              <td>${r.assignedTo || '<span style="color:var(--text-dim);font-size:12px">Unassigned</span>'}</td>
-              <td class="mono" style="font-size:11px">${d(r.empId)}</td>
-              <td>${d(r.contact)}</td>
-              <td>${d(r.trackedBy)}</td>
-              <td><span class="status-pill ${r.status}">${statusIcon(r.status)} ${r.status}</span></td>
-              <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;color:var(--text-muted);font-size:12px">${r.remarks || '<span style="color:var(--text-dim)">—</span>'}</td>
-              <td class="mono" style="font-size:10px;color:var(--text-muted)">${d(r.entryDate)}</td>
-              <td style="white-space:nowrap">
-                <button class="btn-detail" onclick="showDetail(${idx})">🔍 Details</button>
-                <button class="btn-edit-row" onclick="openEditModal(${idx})" title="Edit this record">✏️</button>
-                <button class="btn-del-row" onclick="deleteRecord(${idx})" title="Delete this record">✕</button>
-              </td>
-            </tr>`;
-          }).join('');
-        }
-
-        renderPagination(totalPages, filtered.length);
-      }
-
-      // ── Render pagination ──
-      function renderPagination(totalPages, total) {
-        const pg = document.getElementById('pagination');
-        if (totalPages <= 1) { pg.innerHTML = ''; return; }
-
-        let html = '';
-        // Prev
-        html += `<button class="pg-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
-
-        // Page numbers with ellipsis
-        const pages = [];
-        if (totalPages <= 7) {
-          for (let i=1;i<=totalPages;i++) pages.push(i);
-        } else {
-          pages.push(1);
-          if (currentPage > 4) pages.push('…');
-          for (let i=Math.max(2,currentPage-2); i<=Math.min(totalPages-1,currentPage+2); i++) pages.push(i);
-          if (currentPage < totalPages-3) pages.push('…');
-          pages.push(totalPages);
-        }
-
-        pages.forEach(p => {
-          if (p === '…') {
-            html += `<span class="pg-ellipsis">···</span>`;
-          } else {
-            html += `<button class="pg-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
-          }
-        });
-
-        // Next
-        html += `<button class="pg-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>›</button>`;
-
-        pg.innerHTML = html;
-      }
-
-      function goPage(p) {
-        const totalPages = Math.max(1, Math.ceil(lastFiltered.length / PAGE_SIZE));
-        if (p < 1 || p > totalPages) return;
-        currentPage = p;
-        renderTable(false);
-        document.querySelector('.records-table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-
-      function statusIcon(s) {
-        return { Active:'✅', Faulty:'❌', Maintenance:'🔧', Replaced:'🔄', Decommissioned:'🗑' }[s] || '';
-      }
-
-      // ── Detail Modal ──
-      function showDetail(idx) {
-        const r = allRecords[idx];
-        if (!r) return;
-        document.getElementById('modalTitle').textContent = r.assetTag || 'Asset Details';
-        document.getElementById('modalSubtitle').textContent = `${r.ticketId || ''} · Entry #${r.no || idx+1} · ${r.entryDate || ''}`;
-
-        const v = (val, mono) => val
-          ? `<div class="detail-value${mono?' mono':''}">${val}</div>`
-          : `<div class="detail-value empty">—</div>`;
-
-        document.getElementById('modalBody').innerHTML = `
-          <div class="modal-section">
-            <div class="modal-section-title">🖥️ Device Identity</div>
-            <div class="detail-grid">
-              <div class="detail-item"><div class="detail-label">Asset Tag</div>${v(r.assetTag, true)}</div>
-              <div class="detail-item"><div class="detail-label">Serial Number</div>${v(r.serialNo, true)}</div>
-              <div class="detail-item"><div class="detail-label">Device Type</div>${v(r.deviceType)}</div>
-              <div class="detail-item"><div class="detail-label">Brand</div>${v(r.brand)}</div>
-              <div class="detail-item"><div class="detail-label">Model</div>${v(r.model)}</div>
-              <div class="detail-item"><div class="detail-label">MAC Address</div>${v(r.mac, true)}</div>
-            </div>
+  <!-- PRINTER MODULE -->
+  <div class="module-panel" id="mod-printer">
+    <div class="stat-strip">
+      <div class="stat-card sc-blue"><div><div class="stat-val" id="pr-total">0</div><div class="stat-lbl">Total Records Saved</div></div><div class="stat-ico">🖨️</div></div>
+      <div class="stat-card sc-green"><div><div class="stat-val" id="pr-session">0</div><div class="stat-lbl">Added This Session</div></div><div class="stat-ico">✚</div></div>
+    </div>
+    <div class="view-tabs">
+      <div class="view-tab active" id="tab-printer-add" onclick="switchTab('printer','add')"><span class="tab-dot"></span>📋 ADD ENTRY</div>
+      <div class="view-tab" id="tab-printer-list" onclick="switchTab('printer','list')"><span class="tab-dot"></span>📑 RECORDS LIST</div>
+    </div>
+    <div class="sub-panel active" id="sub-printer-add">
+      <div class="form-card">
+        <div class="form-hdr"><div class="fh-ico fh-purple">🖨️</div><div><div class="form-title">New Printer Record</div><div class="form-sub">Fill in the details below</div></div></div>
+        <div class="form-body">
+          <div class="fields-grid">
+            <div class="field"><label>Printer Serial No</label><input type="text" id="pr-serial" placeholder="e.g. PRN-2024-001"/></div>
+            <div class="field"><label>Printer Type</label>
+              <select id="pr-type"><option value="">— Select —</option><option>Dell Laser Printer</option><option>TSC Label Printer</option><option>Canon Inkjet</option><option>Canon LaserJet</option><option>HP LaserJet</option><option>HP DeskJet</option><option>Epson Dot Matrix</option><option>Epson EcoTank</option><option>Label Printer</option><option>Barcode Printer</option><option>Zebra Thermal Printer</option><option>Brother Laser</option></select></div>
+            <div class="field"><label>Cartridge Type</label>
+              <select id="pr-cart"><option value="">— Select —</option><optgroup label="HP Toner"><option>HP 88A (CC388A)</option><option>HP 12A (Q2612A)</option><option>HP 35A (CB435A)</option><option>HP 36A (CB436A)</option><option>HP 78A (CE278A)</option><option>HP 85A (CE285A)</option><option>HP 26A (CF226A)</option><option>HP 05A (CE505A)</option><option>HP 83A (CF283A)</option><option>HP 17A (CF217A)</option><option>HP 48A (CF248A)</option></optgroup><optgroup label="Canon Toner"><option>Canon 925</option><option>Canon 328</option><option>Canon 337</option><option>Canon 303</option><option>Canon 326</option><option>Canon 047</option><option>Canon CRG 052</option></optgroup><optgroup label="Epson Ink"><option>Epson 001 CMYK Set</option><option>Epson 003 CMYK Set</option><option>Epson T664 CMYK</option><option>Epson Ribbon (Dot Matrix)</option></optgroup><optgroup label="Dell Toner"><option>Dell 1020 Toner</option><option>Dell 1130 Toner</option><option>Dell E310 Toner</option></optgroup><optgroup label="Label/Thermal"><option>TSC Thermal Label Roll</option><option>Zebra Thermal Roll</option><option>Barcode Ribbon Wax</option><option>Barcode Ribbon Resin</option></optgroup><option>Other</option></select></div>
+            <div class="field"><label>Department</label>
+              <select id="pr-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option></select></div>
+            <div class="field"><label>Location</label>
+              <select id="pr-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
+            <div class="field field-full"><label>Remark / Exact Location</label><textarea id="pr-remark" placeholder="e.g. Counter 3, Pharmacy dispensing section"></textarea></div>
           </div>
-          <div class="modal-section">
-            <div class="modal-section-title">📍 Placement & Location</div>
-            <div class="detail-grid">
-              <div class="detail-item"><div class="detail-label">Building / Block</div>${v(r.building)}</div>
-              <div class="detail-item"><div class="detail-label">Floor</div>${v(r.floor)}</div>
-              <div class="detail-item"><div class="detail-label">Room / Cabin</div>${v(r.room)}</div>
-              <div class="detail-item"><div class="detail-label">Desk / Position</div>${v(r.desk)}</div>
-              <div class="detail-item full"><div class="detail-label">Department</div>${v(r.department)}</div>
-            </div>
+          <div class="form-actions"><button class="btn btn-ghost" onclick="clearForm('printer')">Clear</button><button class="btn btn-green" onclick="submitRecord('printer')">✓ Save Record</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="sub-panel" id="sub-printer-list">
+      <div class="list-card">
+        <div class="list-hdr"><div class="list-title">Printer Records <span style="color:var(--muted);font-size:12px;font-weight:400" id="pr-list-count"></span></div><div class="srch">🔍<input type="text" id="srch-printer" placeholder="Search..." oninput="onSearch('printer')"/></div></div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>#</th><th>Date &amp; Time</th><th>Printer Serial</th><th>Printer Type</th><th>Cartridge</th><th>Department</th><th>Location</th><th>Remark</th><th>Actions</th></tr></thead>
+          <tbody id="printer-tbody"></tbody>
+        </table></div>
+        <div class="pagination" id="printer-pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPS MODULE -->
+  <div class="module-panel" id="mod-ups">
+    <div class="stat-strip">
+      <div class="stat-card sc-blue"><div><div class="stat-val" id="ups-total">0</div><div class="stat-lbl">Total Records Saved</div></div><div class="stat-ico">🔋</div></div>
+      <div class="stat-card sc-green"><div><div class="stat-val" id="ups-session">0</div><div class="stat-lbl">Added This Session</div></div><div class="stat-ico">✚</div></div>
+    </div>
+    <div class="view-tabs">
+      <div class="view-tab active" id="tab-ups-add" onclick="switchTab('ups','add')"><span class="tab-dot"></span>📋 ADD ENTRY</div>
+      <div class="view-tab" id="tab-ups-list" onclick="switchTab('ups','list')"><span class="tab-dot"></span>📑 RECORDS LIST</div>
+    </div>
+    <div class="sub-panel active" id="sub-ups-add">
+      <div class="form-card">
+        <div class="form-hdr"><div class="fh-ico fh-green">🔋</div><div><div class="form-title">New UPS Record</div><div class="form-sub">Fill in the details below</div></div></div>
+        <div class="form-body">
+          <div class="fields-grid">
+            <div class="field"><label>UPS Serial No</label><input type="text" id="ups-serial" placeholder="e.g. UPS-2024-001"/></div>
+            <div class="field"><label>UPS Type</label>
+              <select id="ups-type"><option value="">— Select —</option><optgroup label="APC"><option>APC Back-UPS 600VA</option><option>APC Back-UPS 1000VA</option><option>APC Smart-UPS 1500VA</option><option>APC Smart-UPS 2200VA</option></optgroup><optgroup label="Luminous"><option>Luminous 600VA</option><option>Luminous 800VA</option><option>Luminous 1000VA</option><option>Luminous 1500VA</option></optgroup><optgroup label="Microtek"><option>Microtek 600VA</option><option>Microtek 1000VA</option><option>Microtek 2000VA</option></optgroup><optgroup label="Emerson"><option>Emerson 1000VA</option><option>Emerson 2000VA</option><option>Emerson 3000VA</option></optgroup><optgroup label="Online UPS"><option>Online UPS 1 KVA</option><option>Online UPS 2 KVA</option><option>Online UPS 3 KVA</option><option>Online UPS 5 KVA</option><option>Online UPS 10 KVA</option></optgroup><option>Other</option></select></div>
+            <div class="field"><label>Department</label>
+              <select id="ups-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option><option>Server Room</option></select></div>
+            <div class="field"><label>Location</label>
+              <select id="ups-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
+            <div class="field field-full"><label>Remark / Exact Location</label><textarea id="ups-remark" placeholder="e.g. Under desk at Blood Bank reporting section"></textarea></div>
           </div>
-          <div class="modal-section">
-            <div class="modal-section-title">⚙️ Hardware Specifications</div>
-            <div class="detail-grid">
-              <div class="detail-item full"><div class="detail-label">Processor (CPU)</div>${v(r.cpu)}</div>
-              <div class="detail-item"><div class="detail-label">RAM</div>${v(r.ram)}</div>
-              <div class="detail-item"><div class="detail-label">Storage</div>${v(r.storage)}</div>
-              <div class="detail-item"><div class="detail-label">Operating System</div>${v(r.os)}</div>
-              <div class="detail-item"><div class="detail-label">Monitor Size</div>${v(r.monitor)}</div>
-              <div class="detail-item"><div class="detail-label">IP Address</div>${v(r.ip, true)}</div>
-              <div class="detail-item"><div class="detail-label">Setup / Install Date</div>${v(r.setupDate)}</div>
-              <div class="detail-item"><div class="detail-label">Purchase Date</div>${v(r.purchaseDate)}</div>
-              <div class="detail-item full"><div class="detail-label">Warranty Expiry</div>${v(r.warranty)}</div>
-            </div>
+          <div class="form-actions"><button class="btn btn-ghost" onclick="clearForm('ups')">Clear</button><button class="btn btn-green" onclick="submitRecord('ups')">✓ Save Record</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="sub-panel" id="sub-ups-list">
+      <div class="list-card">
+        <div class="list-hdr"><div class="list-title">UPS Records <span style="color:var(--muted);font-size:12px;font-weight:400" id="ups-list-count"></span></div><div class="srch">🔍<input type="text" id="srch-ups" placeholder="Search..." oninput="onSearch('ups')"/></div></div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>#</th><th>Date &amp; Time</th><th>UPS Serial</th><th>UPS Type</th><th>Department</th><th>Location</th><th>Remark</th><th>Actions</th></tr></thead>
+          <tbody id="ups-tbody"></tbody>
+        </table></div>
+        <div class="pagination" id="ups-pagination"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MIC MODULE -->
+  <div class="module-panel" id="mod-mic">
+    <div class="stat-strip">
+      <div class="stat-card sc-blue"><div><div class="stat-val" id="mic-total">0</div><div class="stat-lbl">Total Records Saved</div></div><div class="stat-ico">🎤</div></div>
+      <div class="stat-card sc-green"><div><div class="stat-val" id="mic-session">0</div><div class="stat-lbl">Added This Session</div></div><div class="stat-ico">✚</div></div>
+    </div>
+    <div class="view-tabs">
+      <div class="view-tab active" id="tab-mic-add" onclick="switchTab('mic','add')"><span class="tab-dot"></span>📋 ADD ENTRY</div>
+      <div class="view-tab" id="tab-mic-list" onclick="switchTab('mic','list')"><span class="tab-dot"></span>📑 RECORDS LIST</div>
+    </div>
+    <div class="sub-panel active" id="sub-mic-add">
+      <div class="form-card">
+        <div class="form-hdr"><div class="fh-ico" style="background:rgba(255,140,66,.12)">🎤</div><div><div class="form-title">New Mic Record</div><div class="form-sub">Fill in the details below</div></div></div>
+        <div class="form-body">
+          <div class="fields-grid">
+            <div class="field"><label>Mic Type</label>
+              <select id="mic-type"><option value="">— Select —</option><option>Wired Microphone</option><option>Wireless Microphone</option><option>Condenser Mic</option><option>Dynamic Mic</option><option>Lapel / Lavalier Mic</option><option>Headset Mic</option><option>Boundary Mic</option><option>USB Mic</option><option>Conference Mic</option><option>Boom Mic</option><option>Collar Mic</option><option>Tie Clip Mic</option><option>Handheld Wireless Mic</option><option>Podium Mic</option><option>Other</option></select></div>
+            <div class="field"><label>Serial Number</label><input type="text" id="mic-serial" placeholder="e.g. MIC-2024-001"/></div>
+            <div class="field"><label>Department</label>
+              <select id="mic-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option><option>Server Room</option></select></div>
+            <div class="field"><label>Location</label>
+              <select id="mic-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
+            <div class="field field-full"><label>Remark / Exact Location</label><textarea id="mic-remark" placeholder="e.g. Conference room mic — near podium"></textarea></div>
           </div>
-          <div class="modal-section">
-            <div class="modal-section-title">👤 Assignment & Status</div>
-            <div class="detail-grid">
-              <div class="detail-item"><div class="detail-label">Assigned To</div>${v(r.assignedTo)}</div>
-              <div class="detail-item"><div class="detail-label">Employee ID</div>${v(r.empId, true)}</div>
-              <div class="detail-item"><div class="detail-label">Contact Number</div>${v(r.contact)}</div>
-              <div class="detail-item"><div class="detail-label">Tracked By</div>${v(r.trackedBy)}</div>
-              <div class="detail-item full"><div class="detail-label">Status</div><div class="detail-value"><span class="status-pill ${r.status}">${statusIcon(r.status)} ${r.status}</span></div></div>
-            </div>
+          <div class="form-actions"><button class="btn btn-ghost" onclick="clearForm('mic')">Clear</button><button class="btn btn-green" onclick="submitRecord('mic')">✓ Save Record</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="sub-panel" id="sub-mic-list">
+      <div class="list-card">
+        <div class="list-hdr"><div class="list-title">Mic Records <span style="color:var(--muted);font-size:12px;font-weight:400" id="mic-list-count"></span></div><div class="srch">🔍<input type="text" id="srch-mic" placeholder="Search..." oninput="onSearch('mic')"/></div></div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>#</th><th>Date &amp; Time</th><th>Mic Type</th><th>Serial No</th><th>Department</th><th>Location</th><th>Remark</th><th>Actions</th></tr></thead>
+          <tbody id="mic-tbody"></tbody>
+        </table></div>
+        <div class="pagination" id="mic-pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILE MODULE -->
+  <div class="module-panel" id="mod-mobile">
+    <div class="stat-strip">
+      <div class="stat-card sc-blue"><div><div class="stat-val" id="mob-total">0</div><div class="stat-lbl">Total Records Saved</div></div><div class="stat-ico">📱</div></div>
+      <div class="stat-card sc-green"><div><div class="stat-val" id="mob-session">0</div><div class="stat-lbl">Added This Session</div></div><div class="stat-ico">✚</div></div>
+    </div>
+    <div class="view-tabs">
+      <div class="view-tab active" id="tab-mobile-add" onclick="switchTab('mobile','add')"><span class="tab-dot"></span>📋 ADD ENTRY</div>
+      <div class="view-tab" id="tab-mobile-list" onclick="switchTab('mobile','list')"><span class="tab-dot"></span>📑 RECORDS LIST</div>
+    </div>
+    <div class="sub-panel active" id="sub-mobile-add">
+      <div class="form-card">
+        <div class="form-hdr"><div class="fh-ico" style="background:rgba(123,94,167,.15)">📱</div><div><div class="form-title">New Mobile Record</div><div class="form-sub">Fill in the details below</div></div></div>
+        <div class="form-body">
+          <div class="fields-grid">
+            <div class="field"><label>Mobile Type</label>
+              <select id="mob-type"><option value="">— Select —</option><option>Samsung Galaxy</option><option>Samsung M Series</option><option>Redmi / Xiaomi</option><option>Realme</option><option>Oppo</option><option>Vivo</option><option>iPhone (Apple)</option><option>OnePlus</option><option>Nokia</option><option>Motorola</option><option>Lava</option><option>Micromax</option><option>Itel</option><option>Tecno</option><option>Other</option></select></div>
+            <div class="field"><label>Serial Number</label><input type="text" id="mob-serial" placeholder="e.g. MOB-2024-001"/></div>
+            <div class="field"><label>Department</label>
+              <select id="mob-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option><option>Server Room</option></select></div>
+            <div class="field"><label>Location</label>
+              <select id="mob-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
+            <div class="field field-full"><label>Remark / Exact Location</label><textarea id="mob-remark" placeholder="e.g. Duty doctor mobile — Emergency ward charge nurse"></textarea></div>
           </div>
-          ${r.remarks ? `
-          <div class="modal-section">
-            <div class="modal-section-title">📝 Remarks / Notes</div>
-            <div class="detail-item" style="grid-column:span 2"><div class="detail-value" style="white-space:pre-wrap;line-height:1.7">${r.remarks}</div></div>
-          </div>` : ''}
-        `;
-        document.getElementById('detailModal').classList.add('open');
-        document.body.style.overflow = 'hidden';
+          <div class="form-actions"><button class="btn btn-ghost" onclick="clearForm('mobile')">Clear</button><button class="btn btn-green" onclick="submitRecord('mobile')">✓ Save Record</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="sub-panel" id="sub-mobile-list">
+      <div class="list-card">
+        <div class="list-hdr"><div class="list-title">Mobile Records <span style="color:var(--muted);font-size:12px;font-weight:400" id="mob-list-count"></span></div><div class="srch">🔍<input type="text" id="srch-mobile" placeholder="Search..." oninput="onSearch('mobile')"/></div></div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>#</th><th>Date &amp; Time</th><th>Mobile Type</th><th>Serial No</th><th>Department</th><th>Location</th><th>Remark</th><th>Actions</th></tr></thead>
+          <tbody id="mobile-tbody"></tbody>
+        </table></div>
+        <div class="pagination" id="mobile-pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /content -->
+</main>
+
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="toast" id="toast"></div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">✏️ Edit Record</div>
+    <div id="modal-fields"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-green" onclick="saveModalEdit()">✓ Update Record</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEYS={pc:'at_pc_v2',printer:'at_printer_v2',ups:'at_ups_v2',mic:'at_mic_v2',mobile:'at_mobile_v2'};
+const load=t=>{try{return JSON.parse(localStorage.getItem(KEYS[t])||'[]')}catch(e){return[]}};
+const save=(t,d)=>localStorage.setItem(KEYS[t],JSON.stringify(d));
+const SESSION={pc:0,printer:0,ups:0,mic:0,mobile:0};
+const PER_PAGE=50;
+const PAGE={pc:1,printer:1,ups:1,mic:1,mobile:1};
+const SEARCH={pc:'',printer:'',ups:'',mic:'',mobile:''};
+const ts=()=>new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
+const g=id=>document.getElementById(id);
+const v=id=>g(id)?g(id).value.trim():'';
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+const modMeta={pc:['PC Detail','Add and manage PC asset records'],printer:['Printer Detail','Add and manage printer asset records'],ups:['UPS Detail','Add and manage UPS asset records'],mic:['Mic Detail','Add and manage microphone asset records'],mobile:['Mobile Detail','Add and manage mobile asset records']};
+
+function switchModule(name,el){
+  document.querySelectorAll('.module-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  g('mod-'+name).classList.add('active');
+  el.classList.add('active');
+  g('pageTitle').textContent=modMeta[name][0];
+  g('pageSub').textContent=modMeta[name][1];
+}
+
+function switchTab(type,tab){
+  g('tab-'+type+'-add').classList.toggle('active',tab==='add');
+  g('tab-'+type+'-list').classList.toggle('active',tab==='list');
+  g('sub-'+type+'-add').classList.toggle('active',tab==='add');
+  g('sub-'+type+'-list').classList.toggle('active',tab==='list');
+  if(tab==='list')renderList(type);
+}
+
+
+
+function submitRecord(type){
+  let record;
+  if(type==='pc'){
+    record={id:uid(),serial:v('pc-serial'),cpu:v('cpu-serial'),keyboard:v('kb-serial'),mouse:v('mouse-serial'),dept:v('pc-dept'),loc:v('pc-loc'),remark:v('pc-remark'),dt:ts()};
+  }else if(type==='printer'){
+    record={id:uid(),serial:v('pr-serial'),ptype:v('pr-type'),cart:v('pr-cart'),dept:v('pr-dept'),loc:v('pr-loc'),remark:v('pr-remark'),dt:ts()};
+  }else if(type==='ups'){
+    record={id:uid(),serial:v('ups-serial'),utype:v('ups-type'),dept:v('ups-dept'),loc:v('ups-loc'),remark:v('ups-remark'),dt:ts()};
+  }else if(type==='mic'){
+    record={id:uid(),mtype:v('mic-type'),serial:v('mic-serial'),dept:v('mic-dept'),loc:v('mic-loc'),remark:v('mic-remark'),dt:ts()};
+  }else{
+    record={id:uid(),mtype:v('mob-type'),serial:v('mob-serial'),dept:v('mob-dept'),loc:v('mob-loc'),remark:v('mob-remark'),dt:ts()};
+  }
+  const data=load(type);data.push(record);save(type,data);
+  SESSION[type]++;clearForm(type);updateStats(type);updateBadges();
+  showToast('✓ Record saved!');
+}
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+const fIds={pc:['pc-serial','cpu-serial','kb-serial','mouse-serial','pc-dept','pc-loc','pc-remark'],printer:['pr-serial','pr-type','pr-cart','pr-dept','pr-loc','pr-remark'],ups:['ups-serial','ups-type','ups-dept','ups-loc','ups-remark'],mic:['mic-type','mic-serial','mic-dept','mic-loc','mic-remark'],mobile:['mob-type','mob-serial','mob-dept','mob-loc','mob-remark']};
+function clearForm(t){fIds[t].forEach(id=>{const el=g(id);if(el)el.value='';});}
+
+function updateStats(type){
+  const n=load(type).length;
+  const pre={'printer':'pr','pc':'pc','ups':'ups','mic':'mic','mobile':'mob'}[type]||type;
+  g(pre+'-total').textContent=n;
+  g(pre+'-session').textContent=SESSION[type];
+}
+function updateBadges(){
+  g('cnt-pc').textContent=load('pc').length;
+  g('cnt-printer').textContent=load('printer').length;
+  g('cnt-ups').textContent=load('ups').length;
+  g('cnt-mic').textContent=load('mic').length;
+  g('cnt-mobile').textContent=load('mobile').length;
+}
+
+function onSearch(type){SEARCH[type]=g('srch-'+type).value.toLowerCase();PAGE[type]=1;renderList(type);}
+
+function filteredData(type){
+  const q=SEARCH[type];const data=load(type);
+  if(!q)return data;
+  return data.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
+}
+
+function renderList(type){
+  const all=filteredData(type);const total=all.length;
+  const pages=Math.max(1,Math.ceil(total/PER_PAGE));
+  PAGE[type]=Math.min(PAGE[type],pages);
+  const start=(PAGE[type]-1)*PER_PAGE;const slice=all.slice(start,start+PER_PAGE);
+  const fullData=load(type);
+  const pre={'printer':'pr','pc':'pc','ups':'ups','mic':'mic','mobile':'mob'}[type]||type;
+  const cntEl=g(pre+'-list-count');
+  if(cntEl)cntEl.textContent='('+total+' record'+(total!==1?'s':'')+')';
+
+  const tbodyId={'printer':'printer-tbody','pc':'pc-tbody','ups':'ups-tbody','mic':'mic-tbody','mobile':'mobile-tbody'}[type]||type+'-tbody';
+  const tbody=g(tbodyId);
+
+  if(!slice.length){
+    const cols={pc:10,printer:9,ups:8,mic:8,mobile:8};
+    tbody.innerHTML='<tr><td class="td-empty" colspan="'+cols[type]+'">No records found.</td></tr>';
+  } else {
+    tbody.innerHTML=slice.map((r,si)=>{
+      const realIdx=fullData.findIndex(x=>x.id===r.id);
+      const n=start+si+1;
+      if(type==='pc'){
+        return '<tr><td>'+n+'</td><td style="white-space:nowrap">'+r.dt+'</td><td><b>'+esc(r.serial)+'</b></td><td>'+esc(r.cpu)+'</td><td>'+esc(r.keyboard||'—')+'</td><td>'+esc(r.mouse||'—')+'</td><td>'+esc(r.dept)+'</td><td>'+esc(r.loc)+'</td><td style="max-width:160px;white-space:normal">'+esc(r.remark||'—')+'</td><td><div class="action-cell"><button class="btn-edit" onclick="openEdit(\'pc\','+realIdx+')">✏️ Edit</button><button class="btn-del" onclick="deleteRecord(\'pc\','+realIdx+')">✕ Del</button></div></td></tr>';
+      }else if(type==='printer'){
+        return '<tr><td>'+n+'</td><td style="white-space:nowrap">'+r.dt+'</td><td><b>'+esc(r.serial)+'</b></td><td>'+esc(r.ptype)+'</td><td>'+esc(r.cart)+'</td><td>'+esc(r.dept)+'</td><td>'+esc(r.loc)+'</td><td style="max-width:160px;white-space:normal">'+esc(r.remark||'—')+'</td><td><div class="action-cell"><button class="btn-edit" onclick="openEdit(\'printer\','+realIdx+')">✏️ Edit</button><button class="btn-del" onclick="deleteRecord(\'printer\','+realIdx+')">✕ Del</button></div></td></tr>';
+      }else{
+        return '<tr><td>'+n+'</td><td style="white-space:nowrap">'+r.dt+'</td><td><b>'+esc(r.serial)+'</b></td><td>'+esc(r.utype)+'</td><td>'+esc(r.dept)+'</td><td>'+esc(r.loc)+'</td><td style="max-width:180px;white-space:normal">'+esc(r.remark||'—')+'</td><td><div class="action-cell"><button class="btn-edit" onclick="openEdit(\'ups\','+realIdx+')">✏️ Edit</button><button class="btn-del" onclick="deleteRecord(\'ups\','+realIdx+')">✕ Del</button></div></td></tr>';
       }
+    }).join('');
+  }
+  renderPagination(type,total,pages);
+}
 
-      function closeModal(e) {
-        if (e.target === document.getElementById('detailModal')) closeModalDirect();
-      }
-      function closeModalDirect() {
-        document.getElementById('detailModal').classList.remove('open');
-        document.body.style.overflow = '';
-      }
+function renderPagination(type,total,pages){
+  const pagId={'printer':'printer-pagination','mic':'mic-pagination','mobile':'mobile-pagination'}[type]||(type+'-pagination');const pagEl=g(pagId);if(!pagEl)return;
+  const cur=PAGE[type];if(total===0){pagEl.innerHTML='';return;}
+  const start=(cur-1)*PER_PAGE+1;const end=Math.min(cur*PER_PAGE,total);
+  const mk=(p,label,active,disabled)=>'<button class="pg-btn'+(active?' active':'')+'"'+(disabled?' disabled':'')+' onclick="goPage(\''+type+'\','+p+')">'+label+'</button>';
+  let btns=mk(cur-1,'‹',false,cur===1);
+  if(pages<=7){for(let p=1;p<=pages;p++)btns+=mk(p,p,p===cur,false);}
+  else{
+    btns+=mk(1,'1',cur===1,false);
+    if(cur>3)btns+='<span style="color:var(--muted);padding:0 4px">…</span>';
+    const s=Math.max(2,cur-1),e=Math.min(pages-1,cur+1);
+    for(let p=s;p<=e;p++)btns+=mk(p,p,p===cur,false);
+    if(cur<pages-2)btns+='<span style="color:var(--muted);padding:0 4px">…</span>';
+    btns+=mk(pages,pages,cur===pages,false);
+  }
+  btns+=mk(cur+1,'›',false,cur===pages);
+  pagEl.innerHTML='<div class="page-info">Showing '+start+'–'+end+' of '+total+' records</div><div class="page-btns">'+btns+'</div>';
+}
 
-      // ── Delete single record ──
-      async function deleteRecord(idx) {
-        if (!confirm('Delete this record permanently?')) return;
-        const r = allRecords[idx];
-        try {
-          if (r.idbKey) await deleteRecordFromDB(r.idbKey);
-          allRecords.splice(idx, 1);
-          allRecords = allRecords.map((rec, i) => ({ ...rec, no: i + 1 }));
-          updateStats();
-          renderTable(false);
-          showToast('Record deleted.');
-        } catch(err) {
-          showToast('Delete failed: ' + err.message, true);
-        }
-      }
+function goPage(type,p){PAGE[type]=p;renderList(type);}
 
-      // ── IndexedDB update ──
-      function updateRecordInDB(record) {
-        return new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE, 'readwrite');
-          const req = tx.objectStore(STORE).put(record);
-          req.onsuccess = () => resolve();
-          req.onerror = () => reject(req.error);
-        });
-      }
+function deleteRecord(type,idx){
+  if(!confirm('Delete this record? This cannot be undone.'))return;
+  const data=load(type);data.splice(idx,1);save(type,data);
+  renderList(type);updateStats(type);updateBadges();showToast('Record deleted.','err');
+}
 
-      // ── Edit Modal ──
-      let editingIdx = -1;
+let _eType=null,_eIdx=null;
+const DEPTS=['OPD','IPD','Blood Bank','Pharmacy','Central Lab','ICU','Emergency','Radiology','Operation Theatre','Administration','Accounts','HR'];
+const LOCS=['Ground Floor','First Floor','Second Floor','Third Floor','Fourth Floor','Basement','Reception Area','Server Room'];
+const LOCS_UPS=[...LOCS,'Server Room'];
+const PR_TYPES=['Dell Laser Printer','TSC Label Printer','Canon Inkjet','Canon LaserJet','HP LaserJet','HP DeskJet','Epson Dot Matrix','Epson EcoTank','Label Printer','Barcode Printer','Zebra Thermal Printer','Brother Laser'];
+const CARTS=['HP 88A (CC388A)','HP 12A (Q2612A)','HP 35A (CB435A)','HP 36A (CB436A)','HP 78A (CE278A)','HP 85A (CE285A)','HP 26A (CF226A)','HP 05A (CE505A)','HP 83A (CF283A)','HP 17A (CF217A)','HP 48A (CF248A)','Canon 925','Canon 328','Canon 337','Canon 303','Canon 326','Canon 047','Canon CRG 052','Epson 001 CMYK Set','Epson 003 CMYK Set','Epson T664 CMYK','Epson Ribbon (Dot Matrix)','Dell 1020 Toner','Dell 1130 Toner','Dell E310 Toner','TSC Thermal Label Roll','Zebra Thermal Roll','Barcode Ribbon Wax','Barcode Ribbon Resin','Other'];
+const UPS_TYPES=['APC Back-UPS 600VA','APC Back-UPS 1000VA','APC Smart-UPS 1500VA','APC Smart-UPS 2200VA','Luminous 600VA','Luminous 800VA','Luminous 1000VA','Luminous 1500VA','Microtek 600VA','Microtek 1000VA','Microtek 2000VA','Emerson 1000VA','Emerson 2000VA','Emerson 3000VA','Online UPS 1 KVA','Online UPS 2 KVA','Online UPS 3 KVA','Online UPS 5 KVA','Online UPS 10 KVA','Other'];
+const DEPTS_UPS=[...DEPTS,'Server Room'];
+const MIC_TYPES=['Wired Microphone','Wireless Microphone','Condenser Mic','Dynamic Mic','Lapel / Lavalier Mic','Headset Mic','Boundary Mic','USB Mic','Conference Mic','Boom Mic','Collar Mic','Tie Clip Mic','Handheld Wireless Mic','Podium Mic','Other'];
+const MOB_TYPES=['Samsung Galaxy','Samsung M Series','Redmi / Xiaomi','Realme','Oppo','Vivo','iPhone (Apple)','OnePlus','Nokia','Motorola','Lava','Micromax','Itel','Tecno','Other'];
 
-      function openEditModal(idx) {
-        const r = allRecords[idx];
-        if (!r) return;
-        editingIdx = idx;
+function selOpts(arr,cur){return arr.map(o=>'<option'+(o===cur?' selected':'')+'>'+esc(o)+'</option>').join('');}
 
-        // Populate all fields
-        document.getElementById('e_serialNo').value    = r.serialNo    || '';
-        document.getElementById('e_assetTag').value    = r.assetTag    || '';
-        document.getElementById('e_deviceType').value  = r.deviceType  || '';
-        document.getElementById('e_brand').value       = r.brand       || '';
-        document.getElementById('e_model').value       = r.model       || '';
-        document.getElementById('e_mac').value         = r.mac         || '';
-        document.getElementById('e_building').value    = r.building    || '';
-        document.getElementById('e_floor').value       = r.floor       || '';
-        document.getElementById('e_room').value        = r.room        || '';
-        document.getElementById('e_department').value  = r.department  || '';
-        document.getElementById('e_desk').value        = r.desk        || '';
-        document.getElementById('e_cpu').value         = r.cpu         || '';
-        document.getElementById('e_ram').value         = r.ram         || '';
-        document.getElementById('e_storage').value     = r.storage     || '';
-        document.getElementById('e_os').value          = r.os          || '';
-        document.getElementById('e_monitor').value     = r.monitor     || '';
-        document.getElementById('e_ip').value          = r.ip          || '';
-        document.getElementById('e_setupDate').value   = r.setupDate   || '';
-        document.getElementById('e_purchaseDate').value= r.purchaseDate|| '';
-        document.getElementById('e_warranty').value    = r.warranty    || '';
-        document.getElementById('e_assignedTo').value  = r.assignedTo  || '';
-        document.getElementById('e_empId').value       = r.empId       || '';
-        document.getElementById('e_contact').value     = r.contact     || '';
-        document.getElementById('e_trackedBy').value   = r.trackedBy   || '';
-        document.getElementById('e_remarks').value     = r.remarks     || '';
+function openEdit(type,idx){
+  _eType=type;_eIdx=idx;
+  const r=load(type)[idx];if(!r)return;
+  const icons={pc:'🖥️',printer:'🖨️',ups:'🔋'};
+  g('modal-title').innerHTML=icons[type]+' Edit '+modMeta[type][0]+' Record';
+  let html='';
+  if(type==='pc'){
+    html='<div class="fields-grid"><div class="field"><label>PC Serial No</label><input type="text" id="me-serial" value="'+esc(r.serial)+'"/></div><div class="field"><label>CPU Serial No</label><input type="text" id="me-cpu" value="'+esc(r.cpu)+'"/></div><div class="field"><label>Keyboard Serial</label><input type="text" id="me-kb" value="'+esc(r.keyboard||'')+'"/></div><div class="field"><label>Mouse Serial</label><input type="text" id="me-mouse" value="'+esc(r.mouse||'')+'"/></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>'+selOpts(DEPTS,r.dept)+'</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>'+selOpts(LOCS,r.loc)+'</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">'+esc(r.remark||'')+'</textarea></div></div>';
+  }else if(type==='printer'){
+    html='<div class="fields-grid"><div class="field"><label>Printer Serial No</label><input type="text" id="me-serial" value="'+esc(r.serial)+'"/></div><div class="field"><label>Printer Type</label><select id="me-ptype"><option value="">— Select —</option>'+selOpts(PR_TYPES,r.ptype)+'</select></div><div class="field"><label>Cartridge Type</label><select id="me-cart"><option value="">— Select —</option>'+selOpts(CARTS,r.cart)+'</select></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>'+selOpts(DEPTS,r.dept)+'</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>'+selOpts(LOCS,r.loc)+'</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">'+esc(r.remark||'')+'</textarea></div></div>';
+  }else if(type==='ups'){
+    html='<div class="fields-grid"><div class="field"><label>UPS Serial No</label><input type="text" id="me-serial" value="'+esc(r.serial)+'"/></div><div class="field"><label>UPS Type</label><select id="me-utype"><option value="">— Select —</option>'+selOpts(UPS_TYPES,r.utype)+'</select></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>'+selOpts(DEPTS_UPS,r.dept)+'</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>'+selOpts(LOCS,r.loc)+'</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">'+esc(r.remark||'')+'</textarea></div></div>';
+  }else if(type==='mic'){
+    html='<div class="fields-grid"><div class="field"><label>Mic Type</label><select id="me-mtype"><option value="">— Select —</option>'+selOpts(MIC_TYPES,r.mtype)+'</select></div><div class="field"><label>Serial Number</label><input type="text" id="me-serial" value="'+esc(r.serial||'')+'"/></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>'+selOpts(DEPTS_UPS,r.dept)+'</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>'+selOpts(LOCS,r.loc)+'</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">'+esc(r.remark||'')+'</textarea></div></div>';
+  }else{
+    html='<div class="fields-grid"><div class="field"><label>Mobile Type</label><select id="me-mtype"><option value="">— Select —</option>'+selOpts(MOB_TYPES,r.mtype)+'</select></div><div class="field"><label>Serial Number</label><input type="text" id="me-serial" value="'+esc(r.serial||'')+'"/></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>'+selOpts(DEPTS_UPS,r.dept)+'</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>'+selOpts(LOCS,r.loc)+'</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">'+esc(r.remark||'')+'</textarea></div></div>';
+  }
+  g('modal-fields').innerHTML=html;
+  g('editModal').classList.add('open');
+}
 
-        // Set status radio
-        const statusRadio = document.querySelector(`input[name="edit_status"][value="${r.status}"]`);
-        if (statusRadio) statusRadio.checked = true;
-        else document.getElementById('es1').checked = true;
+function closeModal(){g('editModal').classList.remove('open');_eType=null;_eIdx=null;}
 
-        document.getElementById('editModalSubtitle').textContent =
-          `Asset Tag: ${r.assetTag || '—'} · Ticket: ${r.ticketId || '—'}`;
-        document.getElementById('editLastModified').textContent =
-          r.lastModified ? `Last modified: ${r.lastModified}` : `Created: ${r.entryDate || '—'}`;
+function saveModalEdit(){
+  const type=_eType,idx=_eIdx;if(type===null||idx===null)return;
+  const data=load(type);const r=data[idx];
+  if(type==='pc'){
+    r.serial=g('me-serial')?.value.trim()||'';r.cpu=g('me-cpu')?.value.trim()||'';
+    r.keyboard=g('me-kb')?.value.trim()||'';r.mouse=g('me-mouse')?.value.trim()||'';
+    r.dept=g('me-dept')?.value||'';r.loc=g('me-loc')?.value||'';r.remark=g('me-remark')?.value.trim()||'';
+  }else if(type==='printer'){
+    r.serial=g('me-serial')?.value.trim()||'';r.ptype=g('me-ptype')?.value||'';
+    r.cart=g('me-cart')?.value||'';r.dept=g('me-dept')?.value||'';
+    r.loc=g('me-loc')?.value||'';r.remark=g('me-remark')?.value.trim()||'';
+  }else if(type==='ups'){
+    r.serial=g('me-serial')?.value.trim()||'';r.utype=g('me-utype')?.value||'';
+    r.dept=g('me-dept')?.value||'';r.loc=g('me-loc')?.value||'';r.remark=g('me-remark')?.value.trim()||'';
+  }else if(type==='mic'||type==='mobile'){
+    r.mtype=g('me-mtype')?.value||'';r.serial=g('me-serial')?.value.trim()||'';
+    r.dept=g('me-dept')?.value||'';r.loc=g('me-loc')?.value||'';r.remark=g('me-remark')?.value.trim()||'';
+  }
+  save(type,data);closeModal();renderList(type);showToast('✓ Record updated!');
+}
 
-        document.getElementById('editModal').classList.add('open');
-        document.body.style.overflow = 'hidden';
-      }
+g('editModal').addEventListener('click',e=>{if(e.target===g('editModal'))closeModal();});
 
-      async function saveEdit() {
-        const serial = document.getElementById('e_serialNo').value.trim();
-        const asset  = document.getElementById('e_assetTag').value.trim();
-        if (!serial || !asset) { showToast('Serial Number & Asset Tag are required!', true); return; }
+function clearAllData(){
+  if(!confirm('⚠️ This will permanently delete ALL records (PC, Printer, UPS).\n\nAre you sure? This cannot be undone!'))return;
+  ['pc','printer','ups','mic','mobile'].forEach(t=>{save(t,[]);SESSION[t]=0;updateStats(t);});
+  updateBadges();
+  // re-render if list tab is open
+  ['pc','printer','ups','mic','mobile'].forEach(t=>{
+    if(g('sub-'+t+'-list')&&g('sub-'+t+'-list').classList.contains('active'))renderList(t);
+  });
+  showToast('All data cleared.','err');
+}
+function exportToExcel(){
+  const wb=XLSX.utils.book_new();
+  const today=new Date().toISOString().slice(0,10);
+  function addSheet(type,name){
+    const data=load(type);let headers,rows;
+    if(type==='pc'){headers=['#','Date & Time','PC Serial No','CPU Serial No','Keyboard Serial No','Mouse Serial No','Department','Location','Remark'];rows=data.map((r,i)=>[i+1,r.dt,r.serial,r.cpu,r.keyboard||'',r.mouse||'',r.dept,r.loc,r.remark||'']);}
+    else if(type==='printer'){headers=['#','Date & Time','Printer Serial No','Printer Type','Cartridge Type','Department','Location','Remark'];rows=data.map((r,i)=>[i+1,r.dt,r.serial,r.ptype,r.cart,r.dept,r.loc,r.remark||'']);}
+    else if(type==='ups'){headers=['#','Date & Time','UPS Serial No','UPS Type','Department','Location','Remark'];rows=data.map((r,i)=>[i+1,r.dt,r.serial,r.utype,r.dept,r.loc,r.remark||'']);}
+    else if(type==='mic'){headers=['#','Date & Time','Mic Type','Serial Number','Department','Location','Remark'];rows=data.map((r,i)=>[i+1,r.dt,r.mtype||'',r.serial||'',r.dept,r.loc,r.remark||'']);}
+    else{headers=['#','Date & Time','Mobile Type','Serial Number','Department','Location','Remark'];rows=data.map((r,i)=>[i+1,r.dt,r.mtype||'',r.serial||'',r.dept,r.loc,r.remark||'']);}
+    const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
+    ws['!cols']=headers.map(h=>({wch:Math.max(h.length+4,20)}));
+    XLSX.utils.book_append_sheet(wb,ws,name);
+  }
+  addSheet('pc','PC Details');addSheet('printer','Printer Details');addSheet('ups','UPS Details');addSheet('mic','Mic Details');addSheet('mobile','Mobile Details');
+  XLSX.writeFile(wb,'AssetTracker_'+today+'.xlsx');
+  showToast('✓ Exported! PC:'+load('pc').length+' | Printer:'+load('printer').length+' | UPS:'+load('ups').length+' | Mic:'+load('mic').length+' | Mobile:'+load('mobile').length);
+}
 
-        const r = allRecords[editingIdx];
-        if (!r) return;
+function showToast(msg,type='ok'){
+  const t=g('toast');t.textContent=msg;
+  t.style.background=type==='ok'?'var(--green)':'var(--red)';
+  t.style.color=type==='ok'?'#000':'#fff';
+  t.style.display='block';clearTimeout(t._tid);
+  t._tid=setTimeout(()=>{t.style.display='none';},3200);
+}
 
-        // Apply updates
-        r.serialNo     = serial;
-        r.assetTag     = asset;
-        r.deviceType   = document.getElementById('e_deviceType').value;
-        r.brand        = document.getElementById('e_brand').value;
-        r.model        = document.getElementById('e_model').value;
-        r.mac          = document.getElementById('e_mac').value;
-        r.building     = document.getElementById('e_building').value;
-        r.floor        = document.getElementById('e_floor').value;
-        r.room         = document.getElementById('e_room').value;
-        r.department   = document.getElementById('e_department').value;
-        r.desk         = document.getElementById('e_desk').value;
-        r.cpu          = document.getElementById('e_cpu').value;
-        r.ram          = document.getElementById('e_ram').value;
-        r.storage      = document.getElementById('e_storage').value;
-        r.os           = document.getElementById('e_os').value;
-        r.monitor      = document.getElementById('e_monitor').value;
-        r.ip           = document.getElementById('e_ip').value;
-        r.setupDate    = document.getElementById('e_setupDate').value;
-        r.purchaseDate = document.getElementById('e_purchaseDate').value;
-        r.warranty     = document.getElementById('e_warranty').value;
-        r.assignedTo   = document.getElementById('e_assignedTo').value;
-        r.empId        = document.getElementById('e_empId').value;
-        r.contact      = document.getElementById('e_contact').value;
-        r.trackedBy    = document.getElementById('e_trackedBy').value;
-        r.status       = document.querySelector('input[name="edit_status"]:checked').value;
-        r.remarks      = document.getElementById('e_remarks').value;
-        r.lastModified = new Date().toLocaleString();
+['pc','printer','ups','mic','mobile'].forEach(t=>{updateStats(t);});
+updateBadges();
 
-        try {
-          await updateRecordInDB(r);
-          allRecords[editingIdx] = r;
-          closeEditModalDirect();
-          renderTable(false);
-          populateFilters();
-          showToast(`✅ Record "${r.assetTag}" updated successfully — changes will appear in next Excel export.`);
-        } catch(err) {
-          showToast('Save failed: ' + err.message, true);
-        }
-      }
+// ── MOBILE DRAWER ────────────────────────────────────────
+function toggleDrawer(){
+  const sb=document.querySelector('.sidebar');
+  const ov=document.getElementById('drawerOverlay');
+  const hb=document.getElementById('hamburgerBtn');
+  const isOpen=sb.classList.contains('drawer-open');
+  if(isOpen){closeDrawer();}else{
+    sb.classList.add('drawer-open');
+    ov.classList.add('open');
+    hb.classList.add('open');
+    document.body.style.overflow='hidden';
+  }
+}
+function closeDrawer(){
+  const sb=document.querySelector('.sidebar');
+  const ov=document.getElementById('drawerOverlay');
+  const hb=document.getElementById('hamburgerBtn');
+  sb.classList.remove('drawer-open');
+  ov.classList.remove('open');
+  hb.classList.remove('open');
+  document.body.style.overflow='';
+}
+// close drawer when a nav item is clicked on mobile
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click',()=>{if(window.innerWidth<=768)closeDrawer();});
+});
+// close on resize to desktop
+window.addEventListener('resize',()=>{if(window.innerWidth>768)closeDrawer();});
+// swipe to close
+let _tx=0;
+document.querySelector('.sidebar').addEventListener('touchstart',e=>{_tx=e.touches[0].clientX;},{passive:true});
+document.querySelector('.sidebar').addEventListener('touchend',e=>{
+  if(_tx-e.changedTouches[0].clientX>60)closeDrawer();
+},{passive:true});
 
-      function closeEditModal(e) {
-        if (e.target === document.getElementById('editModal')) closeEditModalDirect();
-      }
-      function closeEditModalDirect() {
-        document.getElementById('editModal').classList.remove('open');
-        document.body.style.overflow = '';
-        editingIdx = -1;
-      }
-      document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') { closeModalDirect(); closeEditModalDirect(); }
-      });
-
-      // ── Export Excel ──
-      function exportExcel() {
-        if (!allRecords.length) { showToast('No records to export! Add at least one entry first.', true); return; }
-        const btn = document.getElementById('exportBtn');
-        btn.textContent = '⏳ Exporting...'; btn.disabled = true;
-        try {
-          const HEADERS = ['#','Ticket ID','Serial No.','Asset Tag','Device Type','Brand','Model','MAC Address','Building / Block','Floor','Room / Cabin','Department','Desk / Position','CPU','RAM','Storage','OS','Monitor','IP Address','Setup Date','Purchase Date','Warranty Expiry','Assigned To','Employee ID','Contact','Tracked By','Status','Remarks','Entry Date/Time','Last Modified'];
-          const wsData = [HEADERS];
-          allRecords.forEach((r, idx) => { wsData.push([idx+1,r.ticketId,r.serialNo,r.assetTag,r.deviceType,r.brand,r.model,r.mac,r.building,r.floor,r.room,r.department,r.desk,r.cpu,r.ram,r.storage,r.os,r.monitor,r.ip,r.setupDate,r.purchaseDate,r.warranty,r.assignedTo,r.empId,r.contact,r.trackedBy,r.status,r.remarks,r.entryDate||'',r.lastModified||'']); });
-          const ws = XLSX.utils.aoa_to_sheet(wsData);
-          ws['!cols'] = [{wch:4},{wch:22},{wch:20},{wch:16},{wch:14},{wch:12},{wch:20},{wch:18},{wch:18},{wch:14},{wch:12},{wch:20},{wch:18},{wch:20},{wch:8},{wch:14},{wch:16},{wch:10},{wch:14},{wch:12},{wch:12},{wch:12},{wch:20},{wch:12},{wch:16},{wch:16},{wch:14},{wch:30},{wch:20}];
-          ws['!freeze'] = {xSplit:0,ySplit:1,topLeftCell:'A2',state:'frozen'};
-          for (let C=0;C<HEADERS.length;C++) { const ref=XLSX.utils.encode_cell({r:0,c:C}); if(!ws[ref])continue; ws[ref].s={font:{bold:true,color:{rgb:'FFFFFF'},sz:11},fill:{fgColor:{rgb:'1A3A6E'}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:{bottom:{style:'medium',color:{rgb:'3B82F6'}}}}; }
-          allRecords.forEach((r,idx)=>{ const row=idx+1; const isEven=idx%2===1; const sc={Active:{fg:'004D26',bg:'06D6A0'},Faulty:{fg:'4D0010',bg:'EF4444'},Maintenance:{fg:'4D3000',bg:'F59E0B'},Replaced:{fg:'00204D',bg:'60A5FA'},Decommissioned:{fg:'1E1E1E',bg:'94A3B8'}}[r.status]; const sRef=XLSX.utils.encode_cell({r:row,c:26}); if(ws[sRef]&&sc)ws[sRef].s={font:{bold:true,color:{rgb:sc.fg}},fill:{fgColor:{rgb:sc.bg}},alignment:{horizontal:'center'}}; if(isEven){for(let C=0;C<HEADERS.length;C++){if(C===26)continue;const ref=XLSX.utils.encode_cell({r:row,c:C});if(!ws[ref])ws[ref]={v:'',t:'s'};if(!ws[ref].s)ws[ref].s={};ws[ref].s.fill={fgColor:{rgb:'0D1A2E'}};}} });
-          const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, 'Asset Records');
-          const counts={Active:0,Faulty:0,Maintenance:0,Replaced:0,Decommissioned:0};const depts={};const brands={};
-          allRecords.forEach(r=>{if(counts[r.status]!==undefined)counts[r.status]++;depts[r.department]=(depts[r.department]||0)+1;brands[r.brand]=(brands[r.brand]||0)+1;});
-          const summaryData=[['PMCH SYSTEM ASSET TRACKER — SUMMARY REPORT'],['Generated',new Date().toLocaleString()],[''],['OVERVIEW',''],['Total Records',allRecords.length],['✅ Active',counts.Active],['❌ Faulty',counts.Faulty],['🔧 Maintenance',counts.Maintenance],['🔄 Replaced',counts.Replaced],['🗑 Decommissioned',counts.Decommissioned],[''],['BY DEPARTMENT','COUNT'],...Object.entries(depts).sort((a,b)=>b[1]-a[1]).map(([d,c])=>[d||'(not set)',c]),[''],['BY BRAND','COUNT'],...Object.entries(brands).sort((a,b)=>b[1]-a[1]).map(([b,c])=>[b||'(not set)',c])];
-          const wsSummary=XLSX.utils.aoa_to_sheet(summaryData);wsSummary['!cols']=[{wch:28},{wch:16}];
-          XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
-          XLSX.writeFile(wb, 'PMCH_Master_Tracker.xlsx', {bookType:'xlsx', cellStyles:true});
-          allRecords = allRecords.map((r,i)=>({...r,no:i+1}));
-          sessionCount=0; updateStats();
-          showToast(`✅ Exported ${allRecords.length} records to PMCH_Master_Tracker.xlsx`);
-        } catch(err) { showToast('Export failed: '+err.message, true); }
-        finally { btn.innerHTML='📥 Export Excel'; btn.disabled=false; }
-      }
-
-      // ── Clear all ──
-      async function clearAllRecords() {
-        if (!allRecords.length) { showToast('Nothing to clear.', true); return; }
-        if (!confirm(`Delete ALL ${allRecords.length} saved records? Make sure you exported first!`)) return;
-        try {
-          await clearAllFromDB();
-          allRecords = []; sessionCount = 0;
-          updateStats(); renderTable(true);
-          showToast('All records cleared. Starting fresh.');
-        } catch(err) {
-          showToast('Clear failed: ' + err.message, true);
-        }
-      }
-    </script>
-  </body>
+</script>
+</body>
 </html>
