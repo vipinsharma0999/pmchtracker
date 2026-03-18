@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Asset Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link TPA-HRef="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -16,19 +16,19 @@
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow:hidden}
 .sidebar{width:var(--sw);min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 14px;position:fixed;left:0;top:0;bottom:0;z-index:200;transition:transform .3s cubic-bezier(.4,0,.2,1)}
 .brand{display:flex;align-items:center;gap:10px;padding:0 8px;margin-bottom:36px}
-.brand-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.brand-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-sTPA-HRink:0}
 .brand-name{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;letter-spacing:-0.4px}
 .nav-lbl{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;padding:0 12px;margin-bottom:6px;margin-top:4px}
 .nav-item{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;cursor:pointer;color:var(--muted);font-size:14px;font-weight:500;transition:all .2s;margin-bottom:2px;position:relative;user-select:none}
 .nav-item:hover{background:var(--surface2);color:var(--text)}
 .nav-item.active{background:rgba(0,194,255,.1);color:var(--accent)}
 .nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:60%;background:var(--accent);border-radius:0 3px 3px 0}
-.nav-icon{font-size:17px;width:22px;text-align:center;flex-shrink:0}
+.nav-icon{font-size:17px;width:22px;text-align:center;flex-sTPA-HRink:0}
 .rec-badge{margin-left:auto;background:var(--accent);color:#000;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;min-width:24px;text-align:center}
 .sidebar-footer{margin-top:auto;padding-top:16px;border-top:1px solid var(--border)}
 .user-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .2s}
 .user-card:hover{background:var(--surface2)}
-.avatar{width:34px;height:34px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.avatar{width:34px;height:34px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-sTPA-HRink:0}
 .u-name{font-size:13px;font-weight:600}.u-role{font-size:11px;color:var(--muted)}
 .logout-btn{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:4px;border-radius:6px;transition:color .2s}
 .logout-btn:hover{color:var(--text)}
@@ -61,12 +61,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .view-tab:hover{background:var(--surface2);color:var(--text)}
 .view-tab.active{background:var(--surface2);color:var(--accent)}
 .view-tab.active .tab-dot{background:var(--accent)}
-.tab-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background .2s;flex-shrink:0}
+.tab-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background .2s;flex-sTPA-HRink:0}
 .sub-panel{display:none;animation:fadeIn .25s ease both}
 .sub-panel.active{display:block}
 .form-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
 .form-hdr{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
-.fh-ico{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.fh-ico{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-sTPA-HRink:0}
 .fh-blue{background:rgba(0,194,255,.12)}.fh-purple{background:rgba(123,94,167,.15)}.fh-green{background:rgba(0,229,160,.12)}
 .form-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px}
 .form-sub{font-size:12px;color:var(--muted);margin-top:1px}
@@ -180,7 +180,7 @@ td.td-empty{text-align:center;color:var(--muted);padding:48px!important;font-siz
     <div class="user-card">
       <div class="avatar">AD</div>
       <div><div class="u-name">Admin</div><div class="u-role">Asset Manager</div></div>
-      <button class="logout-btn" title="Logout" onclick="window.location.href='login.html'">⎋</button>
+      <button class="logout-btn" title="Logout" onclick="window.location.TPA-HRef='login.html'">⎋</button>
     </div>
   </div>
 </aside>
@@ -217,7 +217,7 @@ td.td-empty{text-align:center;color:var(--muted);padding:48px!important;font-siz
             <div class="field"><label>Keyboard Serial No</label><input type="text" id="kb-serial" placeholder="e.g. KB-001"/></div>
             <div class="field"><label>Mouse Serial No</label><input type="text" id="mouse-serial" placeholder="e.g. MS-001"/></div>
             <div class="field"><label>Department</label>
-              <select id="pc-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option></select></div>
+              <select id="pc-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>TPA-HR</option></select></div>
             <div class="field"><label>Location</label>
               <select id="pc-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
             <div class="field field-full"><label>Remark / Exact Location</label><textarea id="pc-remark" placeholder="e.g. Reception counter near entrance — Dr. Sharma cabin"></textarea></div>
@@ -259,7 +259,7 @@ td.td-empty{text-align:center;color:var(--muted);padding:48px!important;font-siz
             <div class="field"><label>Cartridge Type</label>
               <select id="pr-cart"><option value="">— Select —</option><optgroup label="HP Toner"><option>HP 88A (CC388A)</option><option>HP 12A (Q2612A)</option><option>HP 35A (CB435A)</option><option>HP 36A (CB436A)</option><option>HP 78A (CE278A)</option><option>HP 85A (CE285A)</option><option>HP 26A (CF226A)</option><option>HP 05A (CE505A)</option><option>HP 83A (CF283A)</option><option>HP 17A (CF217A)</option><option>HP 48A (CF248A)</option></optgroup><optgroup label="Canon Toner"><option>Canon 925</option><option>Canon 328</option><option>Canon 337</option><option>Canon 303</option><option>Canon 326</option><option>Canon 047</option><option>Canon CRG 052</option></optgroup><optgroup label="Epson Ink"><option>Epson 001 CMYK Set</option><option>Epson 003 CMYK Set</option><option>Epson T664 CMYK</option><option>Epson Ribbon (Dot Matrix)</option></optgroup><optgroup label="Dell Toner"><option>Dell 1020 Toner</option><option>Dell 1130 Toner</option><option>Dell E310 Toner</option></optgroup><optgroup label="Label/Thermal"><option>TSC Thermal Label Roll</option><option>Zebra Thermal Roll</option><option>Barcode Ribbon Wax</option><option>Barcode Ribbon Resin</option></optgroup><option>Other</option></select></div>
             <div class="field"><label>Department</label>
-              <select id="pr-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option></select></div>
+              <select id="pr-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>TPA-HR</option></select></div>
             <div class="field"><label>Location</label>
               <select id="pr-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
             <div class="field field-full"><label>Remark / Exact Location</label><textarea id="pr-remark" placeholder="e.g. Counter 3, Pharmacy dispensing section"></textarea></div>
@@ -299,7 +299,7 @@ td.td-empty{text-align:center;color:var(--muted);padding:48px!important;font-siz
             <div class="field"><label>UPS Type</label>
               <select id="ups-type"><option value="">— Select —</option><optgroup label="APC"><option>APC Back-UPS 600VA</option><option>APC Back-UPS 1000VA</option><option>APC Smart-UPS 1500VA</option><option>APC Smart-UPS 2200VA</option></optgroup><optgroup label="Luminous"><option>Luminous 600VA</option><option>Luminous 800VA</option><option>Luminous 1000VA</option><option>Luminous 1500VA</option></optgroup><optgroup label="Microtek"><option>Microtek 600VA</option><option>Microtek 1000VA</option><option>Microtek 2000VA</option></optgroup><optgroup label="Emerson"><option>Emerson 1000VA</option><option>Emerson 2000VA</option><option>Emerson 3000VA</option></optgroup><optgroup label="Online UPS"><option>Online UPS 1 KVA</option><option>Online UPS 2 KVA</option><option>Online UPS 3 KVA</option><option>Online UPS 5 KVA</option><option>Online UPS 10 KVA</option></optgroup><option>Other</option></select></div>
             <div class="field"><label>Department</label>
-              <select id="ups-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option><option>Server Room</option></select></div>
+              <select id="ups-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>TPA-HR</option><option>Server Room</option></select></div>
             <div class="field"><label>Location</label>
               <select id="ups-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
             <div class="field field-full"><label>Remark / Exact Location</label><textarea id="ups-remark" placeholder="e.g. Under desk at Blood Bank reporting section"></textarea></div>
@@ -340,7 +340,7 @@ td.td-empty{text-align:center;color:var(--muted);padding:48px!important;font-siz
               <select id="mic-type"><option value="">— Select —</option><option>Wired Microphone</option><option>Wireless Microphone</option><option>Condenser Mic</option><option>Dynamic Mic</option><option>Lapel / Lavalier Mic</option><option>Headset Mic</option><option>Boundary Mic</option><option>USB Mic</option><option>Conference Mic</option><option>Boom Mic</option><option>Collar Mic</option><option>Tie Clip Mic</option><option>Handheld Wireless Mic</option><option>Podium Mic</option><option>Other</option></select></div>
             <div class="field"><label>Serial Number</label><input type="text" id="mic-serial" placeholder="e.g. MIC-2024-001"/></div>
             <div class="field"><label>Department</label>
-              <select id="mic-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option><option>Server Room</option></select></div>
+              <select id="mic-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>TPA-HR</option><option>Server Room</option></select></div>
             <div class="field"><label>Location</label>
               <select id="mic-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
             <div class="field field-full"><label>Remark / Exact Location</label><textarea id="mic-remark" placeholder="e.g. Conference room mic — near podium"></textarea></div>
@@ -380,7 +380,7 @@ td.td-empty{text-align:center;color:var(--muted);padding:48px!important;font-siz
               <select id="mob-type"><option value="">— Select —</option><option>Samsung Galaxy</option><option>Samsung M Series</option><option>Redmi / Xiaomi</option><option>Realme</option><option>Oppo</option><option>Vivo</option><option>iPhone (Apple)</option><option>OnePlus</option><option>Nokia</option><option>Motorola</option><option>Lava</option><option>Micromax</option><option>Itel</option><option>Tecno</option><option>Other</option></select></div>
             <div class="field"><label>Serial Number</label><input type="text" id="mob-serial" placeholder="e.g. MOB-2024-001"/></div>
             <div class="field"><label>Department</label>
-              <select id="mob-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option><option>Server Room</option></select></div>
+              <select id="mob-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>TPA-HR</option><option>Server Room</option></select></div>
             <div class="field"><label>Location</label>
               <select id="mob-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
             <div class="field field-full"><label>Remark / Exact Location</label><textarea id="mob-remark" placeholder="e.g. Duty doctor mobile — Emergency ward charge nurse"></textarea></div>
@@ -558,7 +558,7 @@ function deleteRecord(type,idx){
 }
 
 let _eType=null,_eIdx=null;
-const DEPTS=['OPD','IPD','Blood Bank','Pharmacy','Central Lab','ICU','Emergency','Radiology','Operation Theatre','Administration','Accounts','HR','TPA Office'];
+const DEPTS=['OPD','IPD','Blood Bank','Pharmacy','Central Lab','ICU','Emergency','Radiology','Operation Theatre','Administration','Accounts','TPA-HR'];
 const LOCS=['Ground Floor','First Floor','Second Floor','Third Floor','Fourth Floor','Basement','Reception Area','Server Room'];
 const LOCS_UPS=[...LOCS,'Server Room'];
 const PR_TYPES=['Dell Laser Printer','TSC Label Printer','Canon Inkjet','Canon LaserJet','HP LaserJet','HP DeskJet','Epson Dot Matrix','Epson EcoTank','Label Printer','Barcode Printer','Zebra Thermal Printer','Brother Laser'];
