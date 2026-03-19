@@ -1,696 +1,2894 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Asset Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0b0f1a;--surface:#131929;--surface2:#172035;--border:#1e2d45;
-  --accent:#00c2ff;--accent2:#7b5ea7;--green:#00e5a0;--orange:#ff8c42;--red:#ff4d6d;
-  --text:#e8edf5;--muted:#6b7a99;--sw:248px;
-}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow:hidden}
-.sidebar{width:var(--sw);min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 14px;position:fixed;left:0;top:0;bottom:0;z-index:200;transition:transform .3s cubic-bezier(.4,0,.2,1)}
-.brand{display:flex;align-items:center;gap:10px;padding:0 8px;margin-bottom:36px}
-.brand-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.brand-name{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;letter-spacing:-0.4px}
-.nav-lbl{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;padding:0 12px;margin-bottom:6px;margin-top:4px}
-.nav-item{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;cursor:pointer;color:var(--muted);font-size:14px;font-weight:500;transition:all .2s;margin-bottom:2px;position:relative;user-select:none}
-.nav-item:hover{background:var(--surface2);color:var(--text)}
-.nav-item.active{background:rgba(0,194,255,.1);color:var(--accent)}
-.nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:60%;background:var(--accent);border-radius:0 3px 3px 0}
-.nav-icon{font-size:17px;width:22px;text-align:center;flex-shrink:0}
-.rec-badge{margin-left:auto;background:var(--accent);color:#000;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;min-width:24px;text-align:center}
-.sidebar-footer{margin-top:auto;padding-top:16px;border-top:1px solid var(--border)}
-.user-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .2s}
-.user-card:hover{background:var(--surface2)}
-.avatar{width:34px;height:34px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
-.u-name{font-size:13px;font-weight:600}.u-role{font-size:11px;color:var(--muted)}
-.logout-btn{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:4px;border-radius:6px;transition:color .2s}
-.logout-btn:hover{color:var(--text)}
-.main{margin-left:var(--sw);flex:1;min-height:100vh;display:flex;flex-direction:column;overflow-y:auto;transition:margin-left .3s cubic-bezier(.4,0,.2,1)}
-.topbar{padding:18px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);position:sticky;top:0;z-index:10}
-.page-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700}
-.page-sub{font-size:12px;color:var(--muted);margin-top:2px}
-.btn{padding:9px 18px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;border:none;display:inline-flex;align-items:center;gap:6px}
-.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
-.btn-green{background:var(--green);color:#000}.btn-green:hover{opacity:.85}
-.btn-export{background:var(--surface2);color:var(--green);border:1px solid rgba(0,229,160,.4)}.btn-export:hover{background:rgba(0,229,160,.08)}
-.btn-clearall{background:var(--surface2);color:var(--red);border:1px solid rgba(255,77,109,.35)}.btn-clearall:hover{background:rgba(255,77,109,.1)}
-.btn-edit{background:rgba(0,194,255,.1);color:var(--accent);border:1px solid rgba(0,194,255,.2);padding:5px 11px;font-size:11px;border-radius:7px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .2s}.btn-edit:hover{background:rgba(0,194,255,.2)}
-.btn-del{background:rgba(255,77,109,.08);color:var(--red);border:1px solid rgba(255,77,109,.2);padding:5px 11px;font-size:11px;border-radius:7px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .2s}.btn-del:hover{background:rgba(255,77,109,.18)}
-.content{padding:26px 32px;flex:1}
-.module-panel{display:none;animation:fadeIn .3s ease both}
-.module-panel.active{display:block}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.stat-strip{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 22px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between}
-.stat-card::after{content:'';position:absolute;top:-14px;right:-14px;width:80px;height:80px;border-radius:50%;filter:blur(30px);opacity:.14}
-.sc-blue::after{background:var(--accent)}.sc-green::after{background:var(--green)}
-.stat-val{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;line-height:1}
-.sc-blue .stat-val{color:var(--accent)}.sc-green .stat-val{color:var(--green)}
-.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-top:5px}
-.stat-ico{font-size:32px;opacity:.3}
-.view-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:22px}
-.view-tab{padding:14px 20px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;user-select:none;letter-spacing:.5px}
-.view-tab:first-child{border-right:1px solid var(--border)}
-.view-tab:hover{background:var(--surface2);color:var(--text)}
-.view-tab.active{background:var(--surface2);color:var(--accent)}
-.view-tab.active .tab-dot{background:var(--accent)}
-.tab-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background .2s;flex-shrink:0}
-.sub-panel{display:none;animation:fadeIn .25s ease both}
-.sub-panel.active{display:block}
-.form-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.form-hdr{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
-.fh-ico{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
-.fh-blue{background:rgba(0,194,255,.12)}.fh-purple{background:rgba(123,94,167,.15)}.fh-green{background:rgba(0,229,160,.12)}
-.form-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px}
-.form-sub{font-size:12px;color:var(--muted);margin-top:1px}
-.form-body{padding:24px}
-.fields-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-bottom:20px}
-.field-full{grid-column:1/-1}
-.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px}
-.req{color:var(--muted)}
-input[type=text],select,textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
-input[type=text]:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,194,255,.1)}
-
-select{cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%236b7a99' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
-select option,select optgroup{background:var(--surface2);color:var(--text)}
-textarea{resize:vertical;min-height:72px}
-.form-actions{display:flex;gap:10px;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border)}
-.list-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.list-hdr{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
-.list-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px}
-.srch{display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 12px}
-.srch input{background:none;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;width:170px}
-.srch input::placeholder{color:var(--muted)}
-.tbl-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse}
-thead th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}
-tbody tr{border-bottom:1px solid var(--border);transition:background .12s}
-tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:rgba(255,255,255,.02)}
-tbody td{padding:10px 14px;font-size:13px;color:var(--text);vertical-align:middle}
-td.td-empty{text-align:center;color:var(--muted);padding:48px!important;font-size:13px}
-.action-cell{display:flex;gap:6px;white-space:nowrap}
-.pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px}
-.page-info{font-size:12px;color:var(--muted)}
-.page-btns{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
-.pg-btn{min-width:32px;height:32px;padding:0 10px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .18s;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'DM Sans',sans-serif}
-.pg-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
-.pg-btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
-.pg-btn:disabled{opacity:.3;cursor:not-allowed}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
-.modal-overlay.open{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:600px;max-width:100%;max-height:90vh;overflow-y:auto;animation:fadeIn .25s ease}
-.modal-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:20px}
-.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;padding-top:16px;border-top:1px solid var(--border)}
-.toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-weight:600;font-size:13px;z-index:9999;display:none;animation:slideUp .3s ease;max-width:380px}
-@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-
-/* ── MOBILE TOPBAR HAMBURGER ── */
-.hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;flex-direction:column;gap:5px;transition:background .2s}
-.hamburger:hover{background:var(--surface2)}
-.hamburger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:all .3s ease}
-.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
-.hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0)}
-.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-
-/* drawer overlay */
-.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:190;display:none;opacity:0;transition:opacity .3s ease;backdrop-filter:blur(2px)}
-.drawer-overlay.open{display:block;opacity:1}
-
-@media(max-width:768px){
-  body{overflow-x:hidden}
-  .sidebar{transform:translateX(-100%);z-index:200;width:280px;box-shadow:4px 0 40px rgba(0,0,0,.5)}
-  .sidebar.drawer-open{transform:translateX(0)}
-  .main{margin-left:0!important}
-  .hamburger{display:flex}
-  .topbar{padding:14px 16px;gap:12px}
-  .topbar-right-group{display:flex;align-items:center;gap:10px}
-  .page-title{font-size:16px}
-  .page-sub{font-size:11px}
-  .btn-export,.btn-clearall{font-size:11px;padding:7px 10px}
-  .content{padding:16px}
-  .stat-strip{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-  .stat-card{padding:14px 16px}
-  .stat-val{font-size:26px}
-  .stat-lbl{font-size:9px}
-  .stat-ico{font-size:24px}
-  .view-tab{padding:12px 10px;font-size:11px;gap:5px}
-  .fields-grid{grid-template-columns:1fr!important}
-  .field-full{grid-column:1/-1}
-  .form-body{padding:16px}
-  .form-hdr{padding:14px 16px}
-  .list-hdr{flex-direction:column;align-items:flex-start;padding:12px 14px}
-  .srch input{width:130px}
-  .tbl-wrap{-webkit-overflow-scrolling:touch}
-  .pagination{flex-direction:column;align-items:flex-start;padding:12px 14px;gap:8px}
-  .modal{padding:20px 16px}
-  .modal-actions{flex-direction:column-reverse}
-  .modal-actions .btn{width:100%;justify-content:center}
-  .form-actions{flex-wrap:wrap}
-  .form-actions .btn{flex:1;justify-content:center}
-}
-
-@media(max-width:400px){
-  .stat-strip{grid-template-columns:1fr}
-  .view-tab{font-size:10px;padding:11px 8px}
-}
-</style>
-</head>
-<body>
-<aside class="sidebar">
-  <div class="brand"><div class="brand-icon">⚡</div><span class="brand-name">AssetTrack</span></div>
-  <div class="nav-lbl">Asset Modules</div>
-  <div class="nav-item active" onclick="switchModule('pc',this)"><span class="nav-icon">🖥️</span>PC Detail<span class="rec-badge" id="cnt-pc">0</span></div>
-  <div class="nav-item" onclick="switchModule('printer',this)"><span class="nav-icon">🖨️</span>Printer Detail<span class="rec-badge" id="cnt-printer">0</span></div>
-  <div class="nav-item" onclick="switchModule('ups',this)"><span class="nav-icon">🔋</span>UPS Detail<span class="rec-badge" id="cnt-ups">0</span></div>
-  <div class="nav-item" onclick="switchModule('mic',this)"><span class="nav-icon">🎤</span>Mic Detail<span class="rec-badge" id="cnt-mic">0</span></div>
-  <div class="nav-item" onclick="switchModule('mobile',this)"><span class="nav-icon">📱</span>Mobile Detail<span class="rec-badge" id="cnt-mobile">0</span></div>
-  <div style="margin-top:18px">
-    <div class="nav-lbl">Actions</div>
-    <div class="nav-item" onclick="exportToExcel()" style="color:var(--green)"><span class="nav-icon">📥</span>Export to Excel</div>
-  </div>
-  <div class="sidebar-footer">
-    <div class="user-card">
-      <div class="avatar">AD</div>
-      <div><div class="u-name">Admin</div><div class="u-role">Asset Manager</div></div>
-      <button class="logout-btn" title="Logout" onclick="window.location.href='login.html'">⎋</button>
-    </div>
-  </div>
-</aside>
-<main class="main">
-  <div class="topbar">
-    <div style="display:flex;align-items:center;gap:12px">
-      <button class="hamburger" id="hamburgerBtn" onclick="toggleDrawer()" aria-label="Menu"><span></span><span></span><span></span></button>
-      <div><div class="page-title" id="pageTitle">PC Detail</div><div class="page-sub" id="pageSub">Add and manage PC asset records</div></div>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <button class="btn btn-export" onclick="exportToExcel()">📥 Export All to Excel</button>
-      <button class="btn btn-clearall" onclick="clearAllData()">🗑 Clear All Data</button>
-    </div>
-  </div>
-  <div class="content">
-
-  <!-- PC MODULE -->
-  <div class="module-panel active" id="mod-pc">
-    <div class="stat-strip">
-      <div class="stat-card sc-blue"><div><div class="stat-val" id="pc-total">0</div><div class="stat-lbl">Total Records Saved</div></div><div class="stat-ico">🖥️</div></div>
-      <div class="stat-card sc-green"><div><div class="stat-val" id="pc-session">0</div><div class="stat-lbl">Added This Session</div></div><div class="stat-ico">✚</div></div>
-    </div>
-    <div class="view-tabs">
-      <div class="view-tab active" id="tab-pc-add" onclick="switchTab('pc','add')"><span class="tab-dot"></span>📋 ADD ENTRY</div>
-      <div class="view-tab" id="tab-pc-list" onclick="switchTab('pc','list')"><span class="tab-dot"></span>📑 RECORDS LIST</div>
-    </div>
-    <div class="sub-panel active" id="sub-pc-add">
-      <div class="form-card">
-        <div class="form-hdr"><div class="fh-ico fh-blue">🖥️</div><div><div class="form-title">New PC Record</div><div class="form-sub">Fill in the details below</div></div></div>
-        <div class="form-body">
-          <div class="fields-grid">
-            <div class="field"><label>PC Serial No</label><input type="text" id="pc-serial" placeholder="e.g. PC-2024-001"/></div>
-            <div class="field"><label>CPU Serial No</label><input type="text" id="cpu-serial" placeholder="e.g. CPU-XYZ-456"/></div>
-            <div class="field"><label>Keyboard Serial No</label><input type="text" id="kb-serial" placeholder="e.g. KB-001"/></div>
-            <div class="field"><label>Mouse Serial No</label><input type="text" id="mouse-serial" placeholder="e.g. MS-001"/></div>
-            <div class="field"><label>Department</label>
-              <select id="pc-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option></select></div>
-            <div class="field"><label>Location</label>
-              <select id="pc-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
-            <div class="field field-full"><label>Remark / Exact Location</label><textarea id="pc-remark" placeholder="e.g. Reception counter near entrance — Dr. Sharma cabin"></textarea></div>
-          </div>
-          <div class="form-actions"><button class="btn btn-ghost" onclick="clearForm('pc')">Clear</button><button class="btn btn-green" onclick="submitRecord('pc')">✓ Save Record</button></div>
-        </div>
-      </div>
-    </div>
-    <div class="sub-panel" id="sub-pc-list">
-      <div class="list-card">
-        <div class="list-hdr"><div class="list-title">PC Records <span style="color:var(--muted);font-size:12px;font-weight:400" id="pc-list-count"></span></div><div class="srch">🔍<input type="text" id="srch-pc" placeholder="Search..." oninput="onSearch('pc')"/></div></div>
-        <div class="tbl-wrap"><table>
-          <thead><tr><th>#</th><th>Date &amp; Time</th><th>PC Serial</th><th>CPU Serial</th><th>Keyboard</th><th>Mouse</th><th>Department</th><th>Location</th><th>Remark</th><th>Actions</th></tr></thead>
-          <tbody id="pc-tbody"></tbody>
-        </table></div>
-        <div class="pagination" id="pc-pagination"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- PRINTER MODULE -->
-  <div class="module-panel" id="mod-printer">
-    <div class="stat-strip">
-      <div class="stat-card sc-blue"><div><div class="stat-val" id="pr-total">0</div><div class="stat-lbl">Total Records Saved</div></div><div class="stat-ico">🖨️</div></div>
-      <div class="stat-card sc-green"><div><div class="stat-val" id="pr-session">0</div><div class="stat-lbl">Added This Session</div></div><div class="stat-ico">✚</div></div>
-    </div>
-    <div class="view-tabs">
-      <div class="view-tab active" id="tab-printer-add" onclick="switchTab('printer','add')"><span class="tab-dot"></span>📋 ADD ENTRY</div>
-      <div class="view-tab" id="tab-printer-list" onclick="switchTab('printer','list')"><span class="tab-dot"></span>📑 RECORDS LIST</div>
-    </div>
-    <div class="sub-panel active" id="sub-printer-add">
-      <div class="form-card">
-        <div class="form-hdr"><div class="fh-ico fh-purple">🖨️</div><div><div class="form-title">New Printer Record</div><div class="form-sub">Fill in the details below</div></div></div>
-        <div class="form-body">
-          <div class="fields-grid">
-            <div class="field"><label>Printer Serial No</label><input type="text" id="pr-serial" placeholder="e.g. PRN-2024-001"/></div>
-            <div class="field"><label>Printer Type</label>
-              <select id="pr-type"><option value="">— Select —</option><option>Dell Laser Printer</option><option>TSC Label Printer</option><option>Canon Inkjet</option><option>Canon LaserJet</option><option>HP LaserJet</option><option>HP DeskJet</option><option>Epson Dot Matrix</option><option>Epson EcoTank</option><option>Label Printer</option><option>Barcode Printer</option><option>Zebra Thermal Printer</option><option>Brother Laser</option></select></div>
-            <div class="field"><label>Cartridge Type</label>
-              <select id="pr-cart"><option value="">— Select —</option><optgroup label="HP Toner"><option>HP 88A (CC388A)</option><option>HP 12A (Q2612A)</option><option>HP 35A (CB435A)</option><option>HP 36A (CB436A)</option><option>HP 78A (CE278A)</option><option>HP 85A (CE285A)</option><option>HP 26A (CF226A)</option><option>HP 05A (CE505A)</option><option>HP 83A (CF283A)</option><option>HP 17A (CF217A)</option><option>HP 48A (CF248A)</option></optgroup><optgroup label="Canon Toner"><option>Canon 925</option><option>Canon 328</option><option>Canon 337</option><option>Canon 303</option><option>Canon 326</option><option>Canon 047</option><option>Canon CRG 052</option></optgroup><optgroup label="Epson Ink"><option>Epson 001 CMYK Set</option><option>Epson 003 CMYK Set</option><option>Epson T664 CMYK</option><option>Epson Ribbon (Dot Matrix)</option></optgroup><optgroup label="Dell Toner"><option>Dell 1020 Toner</option><option>Dell 1130 Toner</option><option>Dell E310 Toner</option></optgroup><optgroup label="Label/Thermal"><option>TSC Thermal Label Roll</option><option>Zebra Thermal Roll</option><option>Barcode Ribbon Wax</option><option>Barcode Ribbon Resin</option></optgroup><option>Other</option></select></div>
-            <div class="field"><label>Department</label>
-              <select id="pr-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option></select></div>
-            <div class="field"><label>Location</label>
-              <select id="pr-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
-            <div class="field field-full"><label>Remark / Exact Location</label><textarea id="pr-remark" placeholder="e.g. Counter 3, Pharmacy dispensing section"></textarea></div>
-          </div>
-          <div class="form-actions"><button class="btn btn-ghost" onclick="clearForm('printer')">Clear</button><button class="btn btn-green" onclick="submitRecord('printer')">✓ Save Record</button></div>
-        </div>
-      </div>
-    </div>
-    <div class="sub-panel" id="sub-printer-list">
-      <div class="list-card">
-        <div class="list-hdr"><div class="list-title">Printer Records <span style="color:var(--muted);font-size:12px;font-weight:400" id="pr-list-count"></span></div><div class="srch">🔍<input type="text" id="srch-printer" placeholder="Search..." oninput="onSearch('printer')"/></div></div>
-        <div class="tbl-wrap"><table>
-          <thead><tr><th>#</th><th>Date &amp; Time</th><th>Printer Serial</th><th>Printer Type</th><th>Cartridge</th><th>Department</th><th>Location</th><th>Remark</th><th>Actions</th></tr></thead>
-          <tbody id="printer-tbody"></tbody>
-        </table></div>
-        <div class="pagination" id="printer-pagination"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- UPS MODULE -->
-  <div class="module-panel" id="mod-ups">
-    <div class="stat-strip">
-      <div class="stat-card sc-blue"><div><div class="stat-val" id="ups-total">0</div><div class="stat-lbl">Total Records Saved</div></div><div class="stat-ico">🔋</div></div>
-      <div class="stat-card sc-green"><div><div class="stat-val" id="ups-session">0</div><div class="stat-lbl">Added This Session</div></div><div class="stat-ico">✚</div></div>
-    </div>
-    <div class="view-tabs">
-      <div class="view-tab active" id="tab-ups-add" onclick="switchTab('ups','add')"><span class="tab-dot"></span>📋 ADD ENTRY</div>
-      <div class="view-tab" id="tab-ups-list" onclick="switchTab('ups','list')"><span class="tab-dot"></span>📑 RECORDS LIST</div>
-    </div>
-    <div class="sub-panel active" id="sub-ups-add">
-      <div class="form-card">
-        <div class="form-hdr"><div class="fh-ico fh-green">🔋</div><div><div class="form-title">New UPS Record</div><div class="form-sub">Fill in the details below</div></div></div>
-        <div class="form-body">
-          <div class="fields-grid">
-            <div class="field"><label>UPS Serial No</label><input type="text" id="ups-serial" placeholder="e.g. UPS-2024-001"/></div>
-            <div class="field"><label>UPS Type</label>
-              <select id="ups-type"><option value="">— Select —</option><optgroup label="APC"><option>APC Back-UPS 600VA</option><option>APC Back-UPS 1000VA</option><option>APC Smart-UPS 1500VA</option><option>APC Smart-UPS 2200VA</option></optgroup><optgroup label="Luminous"><option>Luminous 600VA</option><option>Luminous 800VA</option><option>Luminous 1000VA</option><option>Luminous 1500VA</option></optgroup><optgroup label="Microtek"><option>Microtek 600VA</option><option>Microtek 1000VA</option><option>Microtek 2000VA</option></optgroup><optgroup label="Emerson"><option>Emerson 1000VA</option><option>Emerson 2000VA</option><option>Emerson 3000VA</option></optgroup><optgroup label="Online UPS"><option>Online UPS 1 KVA</option><option>Online UPS 2 KVA</option><option>Online UPS 3 KVA</option><option>Online UPS 5 KVA</option><option>Online UPS 10 KVA</option></optgroup><option>Other</option></select></div>
-            <div class="field"><label>Department</label>
-              <select id="ups-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option><option>Server Room</option></select></div>
-            <div class="field"><label>Location</label>
-              <select id="ups-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
-            <div class="field field-full"><label>Remark / Exact Location</label><textarea id="ups-remark" placeholder="e.g. Under desk at Blood Bank reporting section"></textarea></div>
-          </div>
-          <div class="form-actions"><button class="btn btn-ghost" onclick="clearForm('ups')">Clear</button><button class="btn btn-green" onclick="submitRecord('ups')">✓ Save Record</button></div>
-        </div>
-      </div>
-    </div>
-    <div class="sub-panel" id="sub-ups-list">
-      <div class="list-card">
-        <div class="list-hdr"><div class="list-title">UPS Records <span style="color:var(--muted);font-size:12px;font-weight:400" id="ups-list-count"></span></div><div class="srch">🔍<input type="text" id="srch-ups" placeholder="Search..." oninput="onSearch('ups')"/></div></div>
-        <div class="tbl-wrap"><table>
-          <thead><tr><th>#</th><th>Date &amp; Time</th><th>UPS Serial</th><th>UPS Type</th><th>Department</th><th>Location</th><th>Remark</th><th>Actions</th></tr></thead>
-          <tbody id="ups-tbody"></tbody>
-        </table></div>
-        <div class="pagination" id="ups-pagination"></div>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- MIC MODULE -->
-  <div class="module-panel" id="mod-mic">
-    <div class="stat-strip">
-      <div class="stat-card sc-blue"><div><div class="stat-val" id="mic-total">0</div><div class="stat-lbl">Total Records Saved</div></div><div class="stat-ico">🎤</div></div>
-      <div class="stat-card sc-green"><div><div class="stat-val" id="mic-session">0</div><div class="stat-lbl">Added This Session</div></div><div class="stat-ico">✚</div></div>
-    </div>
-    <div class="view-tabs">
-      <div class="view-tab active" id="tab-mic-add" onclick="switchTab('mic','add')"><span class="tab-dot"></span>📋 ADD ENTRY</div>
-      <div class="view-tab" id="tab-mic-list" onclick="switchTab('mic','list')"><span class="tab-dot"></span>📑 RECORDS LIST</div>
-    </div>
-    <div class="sub-panel active" id="sub-mic-add">
-      <div class="form-card">
-        <div class="form-hdr"><div class="fh-ico" style="background:rgba(255,140,66,.12)">🎤</div><div><div class="form-title">New Mic Record</div><div class="form-sub">Fill in the details below</div></div></div>
-        <div class="form-body">
-          <div class="fields-grid">
-            <div class="field"><label>Mic Type</label>
-              <select id="mic-type"><option value="">— Select —</option><option>Wired Microphone</option><option>Wireless Microphone</option><option>Condenser Mic</option><option>Dynamic Mic</option><option>Lapel / Lavalier Mic</option><option>Headset Mic</option><option>Boundary Mic</option><option>USB Mic</option><option>Conference Mic</option><option>Boom Mic</option><option>Collar Mic</option><option>Tie Clip Mic</option><option>Handheld Wireless Mic</option><option>Podium Mic</option><option>Other</option></select></div>
-            <div class="field"><label>Serial Number</label><input type="text" id="mic-serial" placeholder="e.g. MIC-2024-001"/></div>
-            <div class="field"><label>Department</label>
-              <select id="mic-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option><option>Server Room</option></select></div>
-            <div class="field"><label>Location</label>
-              <select id="mic-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
-            <div class="field field-full"><label>Remark / Exact Location</label><textarea id="mic-remark" placeholder="e.g. Conference room mic — near podium"></textarea></div>
-          </div>
-          <div class="form-actions"><button class="btn btn-ghost" onclick="clearForm('mic')">Clear</button><button class="btn btn-green" onclick="submitRecord('mic')">✓ Save Record</button></div>
-        </div>
-      </div>
-    </div>
-    <div class="sub-panel" id="sub-mic-list">
-      <div class="list-card">
-        <div class="list-hdr"><div class="list-title">Mic Records <span style="color:var(--muted);font-size:12px;font-weight:400" id="mic-list-count"></span></div><div class="srch">🔍<input type="text" id="srch-mic" placeholder="Search..." oninput="onSearch('mic')"/></div></div>
-        <div class="tbl-wrap"><table>
-          <thead><tr><th>#</th><th>Date &amp; Time</th><th>Mic Type</th><th>Serial No</th><th>Department</th><th>Location</th><th>Remark</th><th>Actions</th></tr></thead>
-          <tbody id="mic-tbody"></tbody>
-        </table></div>
-        <div class="pagination" id="mic-pagination"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MOBILE MODULE -->
-  <div class="module-panel" id="mod-mobile">
-    <div class="stat-strip">
-      <div class="stat-card sc-blue"><div><div class="stat-val" id="mob-total">0</div><div class="stat-lbl">Total Records Saved</div></div><div class="stat-ico">📱</div></div>
-      <div class="stat-card sc-green"><div><div class="stat-val" id="mob-session">0</div><div class="stat-lbl">Added This Session</div></div><div class="stat-ico">✚</div></div>
-    </div>
-    <div class="view-tabs">
-      <div class="view-tab active" id="tab-mobile-add" onclick="switchTab('mobile','add')"><span class="tab-dot"></span>📋 ADD ENTRY</div>
-      <div class="view-tab" id="tab-mobile-list" onclick="switchTab('mobile','list')"><span class="tab-dot"></span>📑 RECORDS LIST</div>
-    </div>
-    <div class="sub-panel active" id="sub-mobile-add">
-      <div class="form-card">
-        <div class="form-hdr"><div class="fh-ico" style="background:rgba(123,94,167,.15)">📱</div><div><div class="form-title">New Mobile Record</div><div class="form-sub">Fill in the details below</div></div></div>
-        <div class="form-body">
-          <div class="fields-grid">
-            <div class="field"><label>Mobile Type</label>
-              <select id="mob-type"><option value="">— Select —</option><option>Samsung Galaxy</option><option>Samsung M Series</option><option>Redmi / Xiaomi</option><option>Realme</option><option>Oppo</option><option>Vivo</option><option>iPhone (Apple)</option><option>OnePlus</option><option>Nokia</option><option>Motorola</option><option>Lava</option><option>Micromax</option><option>Itel</option><option>Tecno</option><option>Other</option></select></div>
-            <div class="field"><label>Serial Number</label><input type="text" id="mob-serial" placeholder="e.g. MOB-2024-001"/></div>
-            <div class="field"><label>Department</label>
-              <select id="mob-dept"><option value="">— Select —</option><option>OPD</option><option>IPD</option><option>Blood Bank</option><option>Pharmacy</option><option>Central Lab</option><option>ICU</option><option>Emergency</option><option>Radiology</option><option>Operation Theatre</option><option>Administration</option><option>Accounts</option><option>HR</option><option>Server Room</option></select></div>
-            <div class="field"><label>Location</label>
-              <select id="mob-loc"><option value="">— Select —</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Basement</option><option>Reception Area</option><option>Server Room</option></select></div>
-            <div class="field field-full"><label>Remark / Exact Location</label><textarea id="mob-remark" placeholder="e.g. Duty doctor mobile — Emergency ward charge nurse"></textarea></div>
-          </div>
-          <div class="form-actions"><button class="btn btn-ghost" onclick="clearForm('mobile')">Clear</button><button class="btn btn-green" onclick="submitRecord('mobile')">✓ Save Record</button></div>
-        </div>
-      </div>
-    </div>
-    <div class="sub-panel" id="sub-mobile-list">
-      <div class="list-card">
-        <div class="list-hdr"><div class="list-title">Mobile Records <span style="color:var(--muted);font-size:12px;font-weight:400" id="mob-list-count"></span></div><div class="srch">🔍<input type="text" id="srch-mobile" placeholder="Search..." oninput="onSearch('mobile')"/></div></div>
-        <div class="tbl-wrap"><table>
-          <thead><tr><th>#</th><th>Date &amp; Time</th><th>Mobile Type</th><th>Serial No</th><th>Department</th><th>Location</th><th>Remark</th><th>Actions</th></tr></thead>
-          <tbody id="mobile-tbody"></tbody>
-        </table></div>
-        <div class="pagination" id="mobile-pagination"></div>
-      </div>
-    </div>
-  </div>
-
-  </div><!-- /content -->
-</main>
-
-<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
-<div class="toast" id="toast"></div>
-
-<!-- EDIT MODAL -->
-<div class="modal-overlay" id="editModal">
-  <div class="modal">
-    <div class="modal-title" id="modal-title">✏️ Edit Record</div>
-    <div id="modal-fields"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-green" onclick="saveModalEdit()">✓ Update Record</button>
-    </div>
-  </div>
-</div>
-
-<script>
-const KEYS={pc:'at_pc_v2',printer:'at_printer_v2',ups:'at_ups_v2',mic:'at_mic_v2',mobile:'at_mobile_v2'};
-const load=t=>{try{return JSON.parse(localStorage.getItem(KEYS[t])||'[]')}catch(e){return[]}};
-const save=(t,d)=>localStorage.setItem(KEYS[t],JSON.stringify(d));
-const SESSION={pc:0,printer:0,ups:0,mic:0,mobile:0};
-const PER_PAGE=50;
-const PAGE={pc:1,printer:1,ups:1,mic:1,mobile:1};
-const SEARCH={pc:'',printer:'',ups:'',mic:'',mobile:''};
-const ts=()=>new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
-const g=id=>document.getElementById(id);
-const v=id=>g(id)?g(id).value.trim():'';
-const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-
-const modMeta={pc:['PC Detail','Add and manage PC asset records'],printer:['Printer Detail','Add and manage printer asset records'],ups:['UPS Detail','Add and manage UPS asset records'],mic:['Mic Detail','Add and manage microphone asset records'],mobile:['Mobile Detail','Add and manage mobile asset records']};
-
-function switchModule(name,el){
-  document.querySelectorAll('.module-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  g('mod-'+name).classList.add('active');
-  el.classList.add('active');
-  g('pageTitle').textContent=modMeta[name][0];
-  g('pageSub').textContent=modMeta[name][1];
-}
-
-function switchTab(type,tab){
-  g('tab-'+type+'-add').classList.toggle('active',tab==='add');
-  g('tab-'+type+'-list').classList.toggle('active',tab==='list');
-  g('sub-'+type+'-add').classList.toggle('active',tab==='add');
-  g('sub-'+type+'-list').classList.toggle('active',tab==='list');
-  if(tab==='list')renderList(type);
-}
-
-
-
-function submitRecord(type){
-  let record;
-  if(type==='pc'){
-    record={id:uid(),serial:v('pc-serial'),cpu:v('cpu-serial'),keyboard:v('kb-serial'),mouse:v('mouse-serial'),dept:v('pc-dept'),loc:v('pc-loc'),remark:v('pc-remark'),dt:ts()};
-  }else if(type==='printer'){
-    record={id:uid(),serial:v('pr-serial'),ptype:v('pr-type'),cart:v('pr-cart'),dept:v('pr-dept'),loc:v('pr-loc'),remark:v('pr-remark'),dt:ts()};
-  }else if(type==='ups'){
-    record={id:uid(),serial:v('ups-serial'),utype:v('ups-type'),dept:v('ups-dept'),loc:v('ups-loc'),remark:v('ups-remark'),dt:ts()};
-  }else if(type==='mic'){
-    record={id:uid(),mtype:v('mic-type'),serial:v('mic-serial'),dept:v('mic-dept'),loc:v('mic-loc'),remark:v('mic-remark'),dt:ts()};
-  }else{
-    record={id:uid(),mtype:v('mob-type'),serial:v('mob-serial'),dept:v('mob-dept'),loc:v('mob-loc'),remark:v('mob-remark'),dt:ts()};
-  }
-  const data=load(type);data.push(record);save(type,data);
-  SESSION[type]++;clearForm(type);updateStats(type);updateBadges();
-  showToast('✓ Record saved!');
-}
-
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
-
-const fIds={pc:['pc-serial','cpu-serial','kb-serial','mouse-serial','pc-dept','pc-loc','pc-remark'],printer:['pr-serial','pr-type','pr-cart','pr-dept','pr-loc','pr-remark'],ups:['ups-serial','ups-type','ups-dept','ups-loc','ups-remark'],mic:['mic-type','mic-serial','mic-dept','mic-loc','mic-remark'],mobile:['mob-type','mob-serial','mob-dept','mob-loc','mob-remark']};
-function clearForm(t){fIds[t].forEach(id=>{const el=g(id);if(el)el.value='';});}
-
-function updateStats(type){
-  const n=load(type).length;
-  const pre={'printer':'pr','pc':'pc','ups':'ups','mic':'mic','mobile':'mob'}[type]||type;
-  g(pre+'-total').textContent=n;
-  g(pre+'-session').textContent=SESSION[type];
-}
-function updateBadges(){
-  g('cnt-pc').textContent=load('pc').length;
-  g('cnt-printer').textContent=load('printer').length;
-  g('cnt-ups').textContent=load('ups').length;
-  g('cnt-mic').textContent=load('mic').length;
-  g('cnt-mobile').textContent=load('mobile').length;
-}
-
-function onSearch(type){SEARCH[type]=g('srch-'+type).value.toLowerCase();PAGE[type]=1;renderList(type);}
-
-function filteredData(type){
-  const q=SEARCH[type];const data=load(type);
-  if(!q)return data;
-  return data.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
-}
-
-function renderList(type){
-  const all=filteredData(type);const total=all.length;
-  const pages=Math.max(1,Math.ceil(total/PER_PAGE));
-  PAGE[type]=Math.min(PAGE[type],pages);
-  const start=(PAGE[type]-1)*PER_PAGE;const slice=all.slice(start,start+PER_PAGE);
-  const fullData=load(type);
-  const pre={'printer':'pr','pc':'pc','ups':'ups','mic':'mic','mobile':'mob'}[type]||type;
-  const cntEl=g(pre+'-list-count');
-  if(cntEl)cntEl.textContent='('+total+' record'+(total!==1?'s':'')+')';
-
-  const tbodyId={'printer':'printer-tbody','pc':'pc-tbody','ups':'ups-tbody','mic':'mic-tbody','mobile':'mobile-tbody'}[type]||type+'-tbody';
-  const tbody=g(tbodyId);
-
-  if(!slice.length){
-    const cols={pc:10,printer:9,ups:8,mic:8,mobile:8};
-    tbody.innerHTML='<tr><td class="td-empty" colspan="'+cols[type]+'">No records found.</td></tr>';
-  } else {
-    tbody.innerHTML=slice.map((r,si)=>{
-      const realIdx=fullData.findIndex(x=>x.id===r.id);
-      const n=start+si+1;
-      if(type==='pc'){
-        return '<tr><td>'+n+'</td><td style="white-space:nowrap">'+r.dt+'</td><td><b>'+esc(r.serial)+'</b></td><td>'+esc(r.cpu)+'</td><td>'+esc(r.keyboard||'—')+'</td><td>'+esc(r.mouse||'—')+'</td><td>'+esc(r.dept)+'</td><td>'+esc(r.loc)+'</td><td style="max-width:160px;white-space:normal">'+esc(r.remark||'—')+'</td><td><div class="action-cell"><button class="btn-edit" onclick="openEdit(\'pc\','+realIdx+')">✏️ Edit</button><button class="btn-del" onclick="deleteRecord(\'pc\','+realIdx+')">✕ Del</button></div></td></tr>';
-      }else if(type==='printer'){
-        return '<tr><td>'+n+'</td><td style="white-space:nowrap">'+r.dt+'</td><td><b>'+esc(r.serial)+'</b></td><td>'+esc(r.ptype)+'</td><td>'+esc(r.cart)+'</td><td>'+esc(r.dept)+'</td><td>'+esc(r.loc)+'</td><td style="max-width:160px;white-space:normal">'+esc(r.remark||'—')+'</td><td><div class="action-cell"><button class="btn-edit" onclick="openEdit(\'printer\','+realIdx+')">✏️ Edit</button><button class="btn-del" onclick="deleteRecord(\'printer\','+realIdx+')">✕ Del</button></div></td></tr>';
-      }else{
-        return '<tr><td>'+n+'</td><td style="white-space:nowrap">'+r.dt+'</td><td><b>'+esc(r.serial)+'</b></td><td>'+esc(r.utype)+'</td><td>'+esc(r.dept)+'</td><td>'+esc(r.loc)+'</td><td style="max-width:180px;white-space:normal">'+esc(r.remark||'—')+'</td><td><div class="action-cell"><button class="btn-edit" onclick="openEdit(\'ups\','+realIdx+')">✏️ Edit</button><button class="btn-del" onclick="deleteRecord(\'ups\','+realIdx+')">✕ Del</button></div></td></tr>';
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Asset Tracker</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
-    }).join('');
-  }
-  renderPagination(type,total,pages);
-}
+      :root {
+        --bg: #0b0f1a;
+        --surface: #131929;
+        --surface2: #172035;
+        --border: #1e2d45;
+        --accent: #00c2ff;
+        --accent2: #7b5ea7;
+        --green: #00e5a0;
+        --orange: #ff8c42;
+        --red: #ff4d6d;
+        --text: #e8edf5;
+        --muted: #6b7a99;
+        --sw: 248px;
+      }
+      body {
+        font-family: 'DM Sans', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        overflow: hidden;
+      }
+      .sidebar {
+        width: var(--sw);
+        min-height: 100vh;
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        padding: 24px 14px;
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 200;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 8px;
+        margin-bottom: 36px;
+      }
+      .brand-icon {
+        width: 38px;
+        height: 38px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+      .brand-name {
+        font-family: 'Syne', sans-serif;
+        font-size: 19px;
+        font-weight: 800;
+        letter-spacing: -0.4px;
+      }
+      .nav-lbl {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        padding: 0 12px;
+        margin-bottom: 6px;
+        margin-top: 4px;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 11px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+        margin-bottom: 2px;
+        position: relative;
+        user-select: none;
+      }
+      .nav-item:hover {
+        background: var(--surface2);
+        color: var(--text);
+      }
+      .nav-item.active {
+        background: rgba(0, 194, 255, 0.1);
+        color: var(--accent);
+      }
+      .nav-item.active::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 60%;
+        background: var(--accent);
+        border-radius: 0 3px 3px 0;
+      }
+      .nav-icon {
+        font-size: 17px;
+        width: 22px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .rec-badge {
+        margin-left: auto;
+        background: var(--accent);
+        color: #000;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 20px;
+        min-width: 24px;
+        text-align: center;
+      }
+      .sidebar-footer {
+        margin-top: auto;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+      }
+      .user-card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .user-card:hover {
+        background: var(--surface2);
+      }
+      .avatar {
+        width: 34px;
+        height: 34px;
+        background: linear-gradient(135deg, var(--accent2), var(--accent));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 13px;
+        flex-shrink: 0;
+      }
+      .u-name {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .u-role {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .logout-btn {
+        margin-left: auto;
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 15px;
+        padding: 4px;
+        border-radius: 6px;
+        transition: color 0.2s;
+      }
+      .logout-btn:hover {
+        color: var(--text);
+      }
+      .main {
+        margin-left: var(--sw);
+        flex: 1;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .topbar {
+        padding: 18px 32px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--surface);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .page-title {
+        font-family: 'Syne', sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .page-sub {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .btn {
+        padding: 9px 18px;
+        border-radius: 9px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn-ghost {
+        background: var(--surface2);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+      .btn-ghost:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .btn-green {
+        background: var(--green);
+        color: #000;
+      }
+      .btn-green:hover {
+        opacity: 0.85;
+      }
+      .btn-export {
+        background: var(--surface2);
+        color: var(--green);
+        border: 1px solid rgba(0, 229, 160, 0.4);
+      }
+      .btn-export:hover {
+        background: rgba(0, 229, 160, 0.08);
+      }
+      .btn-clearall {
+        background: var(--surface2);
+        color: var(--red);
+        border: 1px solid rgba(255, 77, 109, 0.35);
+      }
+      .btn-clearall:hover {
+        background: rgba(255, 77, 109, 0.1);
+      }
+      .btn-edit {
+        background: rgba(0, 194, 255, 0.1);
+        color: var(--accent);
+        border: 1px solid rgba(0, 194, 255, 0.2);
+        padding: 5px 11px;
+        font-size: 11px;
+        border-radius: 7px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s;
+      }
+      .btn-edit:hover {
+        background: rgba(0, 194, 255, 0.2);
+      }
+      .btn-del {
+        background: rgba(255, 77, 109, 0.08);
+        color: var(--red);
+        border: 1px solid rgba(255, 77, 109, 0.2);
+        padding: 5px 11px;
+        font-size: 11px;
+        border-radius: 7px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s;
+      }
+      .btn-del:hover {
+        background: rgba(255, 77, 109, 0.18);
+      }
+      .content {
+        padding: 26px 32px;
+        flex: 1;
+      }
+      .module-panel {
+        display: none;
+        animation: fadeIn 0.3s ease both;
+      }
+      .module-panel.active {
+        display: block;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .stat-strip {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 20px;
+      }
+      .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px 22px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .stat-card::after {
+        content: '';
+        position: absolute;
+        top: -14px;
+        right: -14px;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        filter: blur(30px);
+        opacity: 0.14;
+      }
+      .sc-blue::after {
+        background: var(--accent);
+      }
+      .sc-green::after {
+        background: var(--green);
+      }
+      .stat-val {
+        font-family: 'Syne', sans-serif;
+        font-size: 34px;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .sc-blue .stat-val {
+        color: var(--accent);
+      }
+      .sc-green .stat-val {
+        color: var(--green);
+      }
+      .stat-lbl {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--muted);
+        margin-top: 5px;
+      }
+      .stat-ico {
+        font-size: 32px;
+        opacity: 0.3;
+      }
+      .view-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 22px;
+      }
+      .view-tab {
+        padding: 14px 20px;
+        text-align: center;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--muted);
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        user-select: none;
+        letter-spacing: 0.5px;
+      }
+      .view-tab:first-child {
+        border-right: 1px solid var(--border);
+      }
+      .view-tab:hover {
+        background: var(--surface2);
+        color: var(--text);
+      }
+      .view-tab.active {
+        background: var(--surface2);
+        color: var(--accent);
+      }
+      .view-tab.active .tab-dot {
+        background: var(--accent);
+      }
+      .tab-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--muted);
+        transition: background 0.2s;
+        flex-shrink: 0;
+      }
+      .sub-panel {
+        display: none;
+        animation: fadeIn 0.25s ease both;
+      }
+      .sub-panel.active {
+        display: block;
+      }
+      .form-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .form-hdr {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .fh-ico {
+        width: 38px;
+        height: 38px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 19px;
+        flex-shrink: 0;
+      }
+      .fh-blue {
+        background: rgba(0, 194, 255, 0.12);
+      }
+      .fh-purple {
+        background: rgba(123, 94, 167, 0.15);
+      }
+      .fh-green {
+        background: rgba(0, 229, 160, 0.12);
+      }
+      .form-title {
+        font-family: 'Syne', sans-serif;
+        font-weight: 700;
+        font-size: 15px;
+      }
+      .form-sub {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 1px;
+      }
+      .form-body {
+        padding: 24px;
+      }
+      .fields-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      .field-full {
+        grid-column: 1/-1;
+      }
+      .field label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        margin-bottom: 6px;
+      }
+      .req {
+        color: var(--muted);
+      }
+      input[type='text'],
+      select,
+      textarea {
+        width: 100%;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        padding: 10px 14px;
+        color: var(--text);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 14px;
+        outline: none;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+      }
+      input[type='text']:focus,
+      select:focus,
+      textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(0, 194, 255, 0.1);
+      }
 
-function renderPagination(type,total,pages){
-  const pagId={'printer':'printer-pagination','mic':'mic-pagination','mobile':'mobile-pagination'}[type]||(type+'-pagination');const pagEl=g(pagId);if(!pagEl)return;
-  const cur=PAGE[type];if(total===0){pagEl.innerHTML='';return;}
-  const start=(cur-1)*PER_PAGE+1;const end=Math.min(cur*PER_PAGE,total);
-  const mk=(p,label,active,disabled)=>'<button class="pg-btn'+(active?' active':'')+'"'+(disabled?' disabled':'')+' onclick="goPage(\''+type+'\','+p+')">'+label+'</button>';
-  let btns=mk(cur-1,'‹',false,cur===1);
-  if(pages<=7){for(let p=1;p<=pages;p++)btns+=mk(p,p,p===cur,false);}
-  else{
-    btns+=mk(1,'1',cur===1,false);
-    if(cur>3)btns+='<span style="color:var(--muted);padding:0 4px">…</span>';
-    const s=Math.max(2,cur-1),e=Math.min(pages-1,cur+1);
-    for(let p=s;p<=e;p++)btns+=mk(p,p,p===cur,false);
-    if(cur<pages-2)btns+='<span style="color:var(--muted);padding:0 4px">…</span>';
-    btns+=mk(pages,pages,cur===pages,false);
-  }
-  btns+=mk(cur+1,'›',false,cur===pages);
-  pagEl.innerHTML='<div class="page-info">Showing '+start+'–'+end+' of '+total+' records</div><div class="page-btns">'+btns+'</div>';
-}
+      select {
+        cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%236b7a99' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 13px center;
+        padding-right: 34px;
+      }
+      select option,
+      select optgroup {
+        background: var(--surface2);
+        color: var(--text);
+      }
+      textarea {
+        resize: vertical;
+        min-height: 72px;
+      }
+      .form-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+      }
+      .list-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .list-hdr {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .list-title {
+        font-family: 'Syne', sans-serif;
+        font-weight: 700;
+        font-size: 15px;
+      }
+      .srch {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 7px 12px;
+      }
+      .srch input {
+        background: none;
+        border: none;
+        outline: none;
+        color: var(--text);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px;
+        width: 170px;
+      }
+      .srch input::placeholder {
+        color: var(--muted);
+      }
+      .tbl-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      thead th {
+        padding: 10px 14px;
+        text-align: left;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        color: var(--muted);
+        background: var(--surface2);
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+      }
+      tbody tr {
+        border-bottom: 1px solid var(--border);
+        transition: background 0.12s;
+      }
+      tbody tr:last-child {
+        border-bottom: none;
+      }
+      tbody tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      tbody td {
+        padding: 10px 14px;
+        font-size: 13px;
+        color: var(--text);
+        vertical-align: middle;
+      }
+      td.td-empty {
+        text-align: center;
+        color: var(--muted);
+        padding: 48px !important;
+        font-size: 13px;
+      }
+      .action-cell {
+        display: flex;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 20px;
+        border-top: 1px solid var(--border);
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .page-info {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .page-btns {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .pg-btn {
+        min-width: 32px;
+        height: 32px;
+        padding: 0 10px;
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.18s;
+        border: 1px solid var(--border);
+        background: var(--surface2);
+        color: var(--muted);
+        font-family: 'DM Sans', sans-serif;
+      }
+      .pg-btn:hover:not(:disabled) {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .pg-btn.active {
+        background: var(--accent);
+        color: #000;
+        border-color: var(--accent);
+      }
+      .pg-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 500;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .modal-overlay.open {
+        display: flex;
+      }
+      .modal {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px;
+        width: 600px;
+        max-width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: fadeIn 0.25s ease;
+      }
+      .modal-title {
+        font-family: 'Syne', sans-serif;
+        font-size: 17px;
+        font-weight: 700;
+        margin-bottom: 20px;
+      }
+      .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 22px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+      }
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 13px;
+        z-index: 9999;
+        display: none;
+        animation: slideUp 0.3s ease;
+        max-width: 380px;
+      }
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-function goPage(type,p){PAGE[type]=p;renderList(type);}
+      /* ── MOBILE TOPBAR HAMBURGER ── */
+      .hamburger {
+        display: none;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 8px;
+        flex-direction: column;
+        gap: 5px;
+        transition: background 0.2s;
+      }
+      .hamburger:hover {
+        background: var(--surface2);
+      }
+      .hamburger span {
+        display: block;
+        width: 22px;
+        height: 2px;
+        background: var(--text);
+        border-radius: 2px;
+        transition: all 0.3s ease;
+      }
+      .hamburger.open span:nth-child(1) {
+        transform: translateY(7px) rotate(45deg);
+      }
+      .hamburger.open span:nth-child(2) {
+        opacity: 0;
+        transform: scaleX(0);
+      }
+      .hamburger.open span:nth-child(3) {
+        transform: translateY(-7px) rotate(-45deg);
+      }
 
-function deleteRecord(type,idx){
-  if(!confirm('Delete this record? This cannot be undone.'))return;
-  const data=load(type);data.splice(idx,1);save(type,data);
-  renderList(type);updateStats(type);updateBadges();showToast('Record deleted.','err');
-}
+      /* drawer overlay */
+      .drawer-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 190;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        backdrop-filter: blur(2px);
+      }
+      .drawer-overlay.open {
+        display: block;
+        opacity: 1;
+      }
 
-let _eType=null,_eIdx=null;
-const DEPTS=['OPD','IPD','Blood Bank','Pharmacy','Central Lab','ICU','Emergency','Radiology','Operation Theatre','Administration','Accounts','HR'];
-const LOCS=['Ground Floor','First Floor','Second Floor','Third Floor','Fourth Floor','Basement','Reception Area','Server Room'];
-const LOCS_UPS=[...LOCS,'Server Room'];
-const PR_TYPES=['Dell Laser Printer','TSC Label Printer','Canon Inkjet','Canon LaserJet','HP LaserJet','HP DeskJet','Epson Dot Matrix','Epson EcoTank','Label Printer','Barcode Printer','Zebra Thermal Printer','Brother Laser'];
-const CARTS=['HP 88A (CC388A)','HP 12A (Q2612A)','HP 35A (CB435A)','HP 36A (CB436A)','HP 78A (CE278A)','HP 85A (CE285A)','HP 26A (CF226A)','HP 05A (CE505A)','HP 83A (CF283A)','HP 17A (CF217A)','HP 48A (CF248A)','Canon 925','Canon 328','Canon 337','Canon 303','Canon 326','Canon 047','Canon CRG 052','Epson 001 CMYK Set','Epson 003 CMYK Set','Epson T664 CMYK','Epson Ribbon (Dot Matrix)','Dell 1020 Toner','Dell 1130 Toner','Dell E310 Toner','TSC Thermal Label Roll','Zebra Thermal Roll','Barcode Ribbon Wax','Barcode Ribbon Resin','Other'];
-const UPS_TYPES=['APC Back-UPS 600VA','APC Back-UPS 1000VA','APC Smart-UPS 1500VA','APC Smart-UPS 2200VA','Luminous 600VA','Luminous 800VA','Luminous 1000VA','Luminous 1500VA','Microtek 600VA','Microtek 1000VA','Microtek 2000VA','Emerson 1000VA','Emerson 2000VA','Emerson 3000VA','Online UPS 1 KVA','Online UPS 2 KVA','Online UPS 3 KVA','Online UPS 5 KVA','Online UPS 10 KVA','Other'];
-const DEPTS_UPS=[...DEPTS,'Server Room'];
-const MIC_TYPES=['Wired Microphone','Wireless Microphone','Condenser Mic','Dynamic Mic','Lapel / Lavalier Mic','Headset Mic','Boundary Mic','USB Mic','Conference Mic','Boom Mic','Collar Mic','Tie Clip Mic','Handheld Wireless Mic','Podium Mic','Other'];
-const MOB_TYPES=['Samsung Galaxy','Samsung M Series','Redmi / Xiaomi','Realme','Oppo','Vivo','iPhone (Apple)','OnePlus','Nokia','Motorola','Lava','Micromax','Itel','Tecno','Other'];
+      @media (max-width: 768px) {
+        body {
+          overflow-x: hidden;
+        }
+        .sidebar {
+          transform: translateX(-100%);
+          z-index: 200;
+          width: 280px;
+          box-shadow: 4px 0 40px rgba(0, 0, 0, 0.5);
+        }
+        .sidebar.drawer-open {
+          transform: translateX(0);
+        }
+        .main {
+          margin-left: 0 !important;
+        }
+        .hamburger {
+          display: flex;
+        }
+        .topbar {
+          padding: 14px 16px;
+          gap: 12px;
+        }
+        .topbar-right-group {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .page-title {
+          font-size: 16px;
+        }
+        .page-sub {
+          font-size: 11px;
+        }
+        .btn-export,
+        .btn-clearall {
+          font-size: 11px;
+          padding: 7px 10px;
+        }
+        .content {
+          padding: 16px;
+        }
+        .stat-strip {
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-bottom: 16px;
+        }
+        .stat-card {
+          padding: 14px 16px;
+        }
+        .stat-val {
+          font-size: 26px;
+        }
+        .stat-lbl {
+          font-size: 9px;
+        }
+        .stat-ico {
+          font-size: 24px;
+        }
+        .view-tab {
+          padding: 12px 10px;
+          font-size: 11px;
+          gap: 5px;
+        }
+        .fields-grid {
+          grid-template-columns: 1fr !important;
+        }
+        .field-full {
+          grid-column: 1/-1;
+        }
+        .form-body {
+          padding: 16px;
+        }
+        .form-hdr {
+          padding: 14px 16px;
+        }
+        .list-hdr {
+          flex-direction: column;
+          align-items: flex-start;
+          padding: 12px 14px;
+        }
+        .srch input {
+          width: 130px;
+        }
+        .tbl-wrap {
+          -webkit-overflow-scrolling: touch;
+        }
+        .pagination {
+          flex-direction: column;
+          align-items: flex-start;
+          padding: 12px 14px;
+          gap: 8px;
+        }
+        .modal {
+          padding: 20px 16px;
+        }
+        .modal-actions {
+          flex-direction: column-reverse;
+        }
+        .modal-actions .btn {
+          width: 100%;
+          justify-content: center;
+        }
+        .form-actions {
+          flex-wrap: wrap;
+        }
+        .form-actions .btn {
+          flex: 1;
+          justify-content: center;
+        }
+      }
 
-function selOpts(arr,cur){return arr.map(o=>'<option'+(o===cur?' selected':'')+'>'+esc(o)+'</option>').join('');}
+      @media (max-width: 400px) {
+        .stat-strip {
+          grid-template-columns: 1fr;
+        }
+        .view-tab {
+          font-size: 10px;
+          padding: 11px 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <span class="brand-name">AssetTrack</span>
+      </div>
+      <div class="nav-lbl">Asset Modules</div>
+      <div class="nav-item active" onclick="switchModule('pc', this)">
+        <span class="nav-icon">🖥️</span>PC Detail<span
+          class="rec-badge"
+          id="cnt-pc"
+          >0</span
+        >
+      </div>
+      <div class="nav-item" onclick="switchModule('printer', this)">
+        <span class="nav-icon">🖨️</span>Printer Detail<span
+          class="rec-badge"
+          id="cnt-printer"
+          >0</span
+        >
+      </div>
+      <div class="nav-item" onclick="switchModule('ups', this)">
+        <span class="nav-icon">🔋</span>UPS Detail<span
+          class="rec-badge"
+          id="cnt-ups"
+          >0</span
+        >
+      </div>
+      <div class="nav-item" onclick="switchModule('mic', this)">
+        <span class="nav-icon">🎤</span>Mic Detail<span
+          class="rec-badge"
+          id="cnt-mic"
+          >0</span
+        >
+      </div>
+      <div class="nav-item" onclick="switchModule('mobile', this)">
+        <span class="nav-icon">📱</span>Mobile Detail<span
+          class="rec-badge"
+          id="cnt-mobile"
+          >0</span
+        >
+      </div>
+      <div style="margin-top: 18px">
+        <div class="nav-lbl">Actions</div>
+        <div
+          class="nav-item"
+          onclick="exportToExcel()"
+          style="color: var(--green)"
+        >
+          <span class="nav-icon">📥</span>Export to Excel
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="user-card">
+          <div class="avatar">AD</div>
+          <div>
+            <div class="u-name">Admin</div>
+            <div class="u-role">Asset Manager</div>
+          </div>
+          <button
+            class="logout-btn"
+            title="Logout"
+            onclick="window.location.href = 'login.html'"
+          >
+            ⎋
+          </button>
+        </div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="topbar">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <button
+            class="hamburger"
+            id="hamburgerBtn"
+            onclick="toggleDrawer()"
+            aria-label="Menu"
+          >
+            <span></span><span></span><span></span>
+          </button>
+          <div>
+            <div class="page-title" id="pageTitle">PC Detail</div>
+            <div class="page-sub" id="pageSub">
+              Add and manage PC asset records
+            </div>
+          </div>
+        </div>
+        <div
+          style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"
+        >
+          <button class="btn btn-export" onclick="exportToExcel()">
+            📥 Export All to Excel
+          </button>
+          <button class="btn btn-clearall" onclick="clearAllData()">
+            🗑 Clear All Data
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        <!-- PC MODULE -->
+        <div class="module-panel active" id="mod-pc">
+          <div class="stat-strip">
+            <div class="stat-card sc-blue">
+              <div>
+                <div class="stat-val" id="pc-total">0</div>
+                <div class="stat-lbl">Total Records Saved</div>
+              </div>
+              <div class="stat-ico">🖥️</div>
+            </div>
+            <div class="stat-card sc-green">
+              <div>
+                <div class="stat-val" id="pc-session">0</div>
+                <div class="stat-lbl">Added This Session</div>
+              </div>
+              <div class="stat-ico">✚</div>
+            </div>
+          </div>
+          <div class="view-tabs">
+            <div
+              class="view-tab active"
+              id="tab-pc-add"
+              onclick="switchTab('pc', 'add')"
+            >
+              <span class="tab-dot"></span>📋 ADD ENTRY
+            </div>
+            <div
+              class="view-tab"
+              id="tab-pc-list"
+              onclick="switchTab('pc', 'list')"
+            >
+              <span class="tab-dot"></span>📑 RECORDS LIST
+            </div>
+          </div>
+          <div class="sub-panel active" id="sub-pc-add">
+            <div class="form-card">
+              <div class="form-hdr">
+                <div class="fh-ico fh-blue">🖥️</div>
+                <div>
+                  <div class="form-title">New PC Record</div>
+                  <div class="form-sub">Fill in the details below</div>
+                </div>
+              </div>
+              <div class="form-body">
+                <div class="fields-grid">
+                  <div class="field">
+                    <label>PC Serial No</label
+                    ><input
+                      type="text"
+                      id="pc-serial"
+                      placeholder="e.g. PC-2024-001"
+                    />
+                  </div>
+                  <div class="field">
+                    <label>CPU Serial No</label
+                    ><input
+                      type="text"
+                      id="cpu-serial"
+                      placeholder="e.g. CPU-XYZ-456"
+                    />
+                  </div>
+                  <div class="field">
+                    <label>Keyboard Serial No</label
+                    ><input
+                      type="text"
+                      id="kb-serial"
+                      placeholder="e.g. KB-001"
+                    />
+                  </div>
+                  <div class="field">
+                    <label>Mouse Serial No</label
+                    ><input
+                      type="text"
+                      id="mouse-serial"
+                      placeholder="e.g. MS-001"
+                    />
+                  </div>
+                  <div class="field">
+                    <label>Department</label>
+                    <select id="pc-dept">
+                      <option value="">— Select —</option>
+                      <option>OPD</option>
+                      <option>IPD</option>
+                      <option>Blood Bank</option>
+                      <option>Pharmacy</option>
+                      <option>Central Lab</option>
+                      <option>ICU</option>
+                      <option>Emergency</option>
+                      <option>Radiology</option>
+                      <option>Operation Theatre</option>
+                      <option>Administration</option>
+                      <option>Accounts</option>
+                      <option>TPA-HR</option>
+                      <option>Civil Measurement Office</option>
+                      <option>MRD</option>
+                      <option>Captain Office</option>
+                      <option>Front-Reception</option>
+                      <option>Biomedical</option>
+                      <option>USG</option>
+                      <option>Server Room</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Location</label>
+                    <select id="pc-loc">
+                      <option value="">— Select —</option>
+                      <option>Ground Floor</option>
+                      <option>First Floor</option>
+                      <option>Second Floor</option>
+                      <option>Third Floor</option>
+                      <option>Fourth Floor</option>
+                      <option>Basement</option>
+                      <option>Reception Area</option>
+                      <option>Server Room</option>
+                    </select>
+                  </div>
+                  <div class="field field-full">
+                    <label>Remark / Exact Location</label
+                    ><textarea
+                      id="pc-remark"
+                      placeholder="e.g. Reception counter near entrance — Dr. Sharma cabin"
+                    ></textarea>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button class="btn btn-ghost" onclick="clearForm('pc')">
+                    Clear</button
+                  ><button class="btn btn-green" onclick="submitRecord('pc')">
+                    ✓ Save Record
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sub-panel" id="sub-pc-list">
+            <div class="list-card">
+              <div class="list-hdr">
+                <div class="list-title">
+                  PC Records
+                  <span
+                    style="
+                      color: var(--muted);
+                      font-size: 12px;
+                      font-weight: 400;
+                    "
+                    id="pc-list-count"
+                  ></span>
+                </div>
+                <div class="srch">
+                  🔍<input
+                    type="text"
+                    id="srch-pc"
+                    placeholder="Search..."
+                    oninput="onSearch('pc')"
+                  />
+                </div>
+              </div>
+              <div class="tbl-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Date &amp; Time</th>
+                      <th>PC Serial</th>
+                      <th>CPU Serial</th>
+                      <th>Keyboard</th>
+                      <th>Mouse</th>
+                      <th>Department</th>
+                      <th>Location</th>
+                      <th>Remark</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pc-tbody"></tbody>
+                </table>
+              </div>
+              <div class="pagination" id="pc-pagination"></div>
+            </div>
+          </div>
+        </div>
 
-function openEdit(type,idx){
-  _eType=type;_eIdx=idx;
-  const r=load(type)[idx];if(!r)return;
-  const icons={pc:'🖥️',printer:'🖨️',ups:'🔋'};
-  g('modal-title').innerHTML=icons[type]+' Edit '+modMeta[type][0]+' Record';
-  let html='';
-  if(type==='pc'){
-    html='<div class="fields-grid"><div class="field"><label>PC Serial No</label><input type="text" id="me-serial" value="'+esc(r.serial)+'"/></div><div class="field"><label>CPU Serial No</label><input type="text" id="me-cpu" value="'+esc(r.cpu)+'"/></div><div class="field"><label>Keyboard Serial</label><input type="text" id="me-kb" value="'+esc(r.keyboard||'')+'"/></div><div class="field"><label>Mouse Serial</label><input type="text" id="me-mouse" value="'+esc(r.mouse||'')+'"/></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>'+selOpts(DEPTS,r.dept)+'</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>'+selOpts(LOCS,r.loc)+'</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">'+esc(r.remark||'')+'</textarea></div></div>';
-  }else if(type==='printer'){
-    html='<div class="fields-grid"><div class="field"><label>Printer Serial No</label><input type="text" id="me-serial" value="'+esc(r.serial)+'"/></div><div class="field"><label>Printer Type</label><select id="me-ptype"><option value="">— Select —</option>'+selOpts(PR_TYPES,r.ptype)+'</select></div><div class="field"><label>Cartridge Type</label><select id="me-cart"><option value="">— Select —</option>'+selOpts(CARTS,r.cart)+'</select></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>'+selOpts(DEPTS,r.dept)+'</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>'+selOpts(LOCS,r.loc)+'</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">'+esc(r.remark||'')+'</textarea></div></div>';
-  }else if(type==='ups'){
-    html='<div class="fields-grid"><div class="field"><label>UPS Serial No</label><input type="text" id="me-serial" value="'+esc(r.serial)+'"/></div><div class="field"><label>UPS Type</label><select id="me-utype"><option value="">— Select —</option>'+selOpts(UPS_TYPES,r.utype)+'</select></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>'+selOpts(DEPTS_UPS,r.dept)+'</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>'+selOpts(LOCS,r.loc)+'</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">'+esc(r.remark||'')+'</textarea></div></div>';
-  }else if(type==='mic'){
-    html='<div class="fields-grid"><div class="field"><label>Mic Type</label><select id="me-mtype"><option value="">— Select —</option>'+selOpts(MIC_TYPES,r.mtype)+'</select></div><div class="field"><label>Serial Number</label><input type="text" id="me-serial" value="'+esc(r.serial||'')+'"/></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>'+selOpts(DEPTS_UPS,r.dept)+'</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>'+selOpts(LOCS,r.loc)+'</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">'+esc(r.remark||'')+'</textarea></div></div>';
-  }else{
-    html='<div class="fields-grid"><div class="field"><label>Mobile Type</label><select id="me-mtype"><option value="">— Select —</option>'+selOpts(MOB_TYPES,r.mtype)+'</select></div><div class="field"><label>Serial Number</label><input type="text" id="me-serial" value="'+esc(r.serial||'')+'"/></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>'+selOpts(DEPTS_UPS,r.dept)+'</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>'+selOpts(LOCS,r.loc)+'</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">'+esc(r.remark||'')+'</textarea></div></div>';
-  }
-  g('modal-fields').innerHTML=html;
-  g('editModal').classList.add('open');
-}
+        <!-- PRINTER MODULE -->
+        <div class="module-panel" id="mod-printer">
+          <div class="stat-strip">
+            <div class="stat-card sc-blue">
+              <div>
+                <div class="stat-val" id="pr-total">0</div>
+                <div class="stat-lbl">Total Records Saved</div>
+              </div>
+              <div class="stat-ico">🖨️</div>
+            </div>
+            <div class="stat-card sc-green">
+              <div>
+                <div class="stat-val" id="pr-session">0</div>
+                <div class="stat-lbl">Added This Session</div>
+              </div>
+              <div class="stat-ico">✚</div>
+            </div>
+          </div>
+          <div class="view-tabs">
+            <div
+              class="view-tab active"
+              id="tab-printer-add"
+              onclick="switchTab('printer', 'add')"
+            >
+              <span class="tab-dot"></span>📋 ADD ENTRY
+            </div>
+            <div
+              class="view-tab"
+              id="tab-printer-list"
+              onclick="switchTab('printer', 'list')"
+            >
+              <span class="tab-dot"></span>📑 RECORDS LIST
+            </div>
+          </div>
+          <div class="sub-panel active" id="sub-printer-add">
+            <div class="form-card">
+              <div class="form-hdr">
+                <div class="fh-ico fh-purple">🖨️</div>
+                <div>
+                  <div class="form-title">New Printer Record</div>
+                  <div class="form-sub">Fill in the details below</div>
+                </div>
+              </div>
+              <div class="form-body">
+                <div class="fields-grid">
+                  <div class="field">
+                    <label>Printer Serial No</label
+                    ><input
+                      type="text"
+                      id="pr-serial"
+                      placeholder="e.g. PRN-2024-001"
+                    />
+                  </div>
+                  <div class="field">
+                    <label>Printer Type</label>
+                    <select id="pr-type">
+                      <option value="">— Select —</option>
+                      <option>Dell Laser Printer</option>
+                      <option>TSC Label Printer</option>
+                      <option>Canon Inkjet</option>
+                      <option>Canon LaserJet</option>
+                      <option>HP LaserJet</option>
+                      <option>HP DeskJet</option>
+                      <option>Epson Dot Matrix</option>
+                      <option>Epson EcoTank</option>
+                      <option>Label Printer</option>
+                      <option>Barcode Printer</option>
+                      <option>Zebra Thermal Printer</option>
+                      <option>Brother Laser</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Cartridge Type</label>
+                    <select id="pr-cart">
+                      <option value="">— Select —</option>
+                      <optgroup label="HP Toner">
+                        <option>HP 88A (CC388A)</option>
+                        <option>HP 12A (Q2612A)</option>
+                        <option>HP 35A (CB435A)</option>
+                        <option>HP 36A (CB436A)</option>
+                        <option>HP 78A (CE278A)</option>
+                        <option>HP 85A (CE285A)</option>
+                        <option>HP 26A (CF226A)</option>
+                        <option>HP 05A (CE505A)</option>
+                        <option>HP 83A (CF283A)</option>
+                        <option>HP 17A (CF217A)</option>
+                        <option>HP 48A (CF248A)</option>
+                      </optgroup>
+                      <optgroup label="Canon Toner">
+                        <option>Canon 925</option>
+                        <option>Canon 328</option>
+                        <option>Canon 337</option>
+                        <option>Canon 303</option>
+                        <option>Canon 326</option>
+                        <option>Canon 047</option>
+                        <option>Canon CRG 052</option>
+                      </optgroup>
+                      <optgroup label="Epson Ink">
+                        <option>Epson 001 CMYK Set</option>
+                        <option>Epson 003 CMYK Set</option>
+                        <option>Epson T664 CMYK</option>
+                        <option>Epson Ribbon (Dot Matrix)</option>
+                      </optgroup>
+                      <optgroup label="Dell Toner">
+                        <option>Dell 1020 Toner</option>
+                        <option>Dell 1130 Toner</option>
+                        <option>Dell E310 Toner</option>
+                      </optgroup>
+                      <optgroup label="Label/Thermal">
+                        <option>TSC Thermal Label Roll</option>
+                        <option>Zebra Thermal Roll</option>
+                        <option>Barcode Ribbon Wax</option>
+                        <option>Barcode Ribbon Resin</option>
+                      </optgroup>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Department</label>
+                    <select id="pr-dept">
+                      <option value="">— Select —</option>
+                      <option>OPD</option>
+                      <option>IPD</option>
+                      <option>Blood Bank</option>
+                      <option>Pharmacy</option>
+                      <option>Central Lab</option>
+                      <option>ICU</option>
+                      <option>Emergency</option>
+                      <option>Radiology</option>
+                      <option>Operation Theatre</option>
+                      <option>Administration</option>
+                      <option>Accounts</option>
+                      <option>TPA-HR</option>
+                      <option>Civil Measurement Office</option>
+                      <option>MRD</option>
+                      <option>Captain Office</option>
+                      <option>Front-Reception</option>
+                      <option>Biomedical</option>
+                      <option>USG</option>
+                      <option>Server Room</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Location</label>
+                    <select id="pr-loc">
+                      <option value="">— Select —</option>
+                      <option>Ground Floor</option>
+                      <option>First Floor</option>
+                      <option>Second Floor</option>
+                      <option>Third Floor</option>
+                      <option>Fourth Floor</option>
+                      <option>Basement</option>
+                      <option>Reception Area</option>
+                      <option>Server Room</option>
+                    </select>
+                  </div>
+                  <div class="field field-full">
+                    <label>Remark / Exact Location</label
+                    ><textarea
+                      id="pr-remark"
+                      placeholder="e.g. Counter 3, Pharmacy dispensing section"
+                    ></textarea>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button class="btn btn-ghost" onclick="clearForm('printer')">
+                    Clear</button
+                  ><button
+                    class="btn btn-green"
+                    onclick="submitRecord('printer')"
+                  >
+                    ✓ Save Record
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sub-panel" id="sub-printer-list">
+            <div class="list-card">
+              <div class="list-hdr">
+                <div class="list-title">
+                  Printer Records
+                  <span
+                    style="
+                      color: var(--muted);
+                      font-size: 12px;
+                      font-weight: 400;
+                    "
+                    id="pr-list-count"
+                  ></span>
+                </div>
+                <div class="srch">
+                  🔍<input
+                    type="text"
+                    id="srch-printer"
+                    placeholder="Search..."
+                    oninput="onSearch('printer')"
+                  />
+                </div>
+              </div>
+              <div class="tbl-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Date &amp; Time</th>
+                      <th>Printer Serial</th>
+                      <th>Printer Type</th>
+                      <th>Cartridge</th>
+                      <th>Department</th>
+                      <th>Location</th>
+                      <th>Remark</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="printer-tbody"></tbody>
+                </table>
+              </div>
+              <div class="pagination" id="printer-pagination"></div>
+            </div>
+          </div>
+        </div>
 
-function closeModal(){g('editModal').classList.remove('open');_eType=null;_eIdx=null;}
+        <!-- UPS MODULE -->
+        <div class="module-panel" id="mod-ups">
+          <div class="stat-strip">
+            <div class="stat-card sc-blue">
+              <div>
+                <div class="stat-val" id="ups-total">0</div>
+                <div class="stat-lbl">Total Records Saved</div>
+              </div>
+              <div class="stat-ico">🔋</div>
+            </div>
+            <div class="stat-card sc-green">
+              <div>
+                <div class="stat-val" id="ups-session">0</div>
+                <div class="stat-lbl">Added This Session</div>
+              </div>
+              <div class="stat-ico">✚</div>
+            </div>
+          </div>
+          <div class="view-tabs">
+            <div
+              class="view-tab active"
+              id="tab-ups-add"
+              onclick="switchTab('ups', 'add')"
+            >
+              <span class="tab-dot"></span>📋 ADD ENTRY
+            </div>
+            <div
+              class="view-tab"
+              id="tab-ups-list"
+              onclick="switchTab('ups', 'list')"
+            >
+              <span class="tab-dot"></span>📑 RECORDS LIST
+            </div>
+          </div>
+          <div class="sub-panel active" id="sub-ups-add">
+            <div class="form-card">
+              <div class="form-hdr">
+                <div class="fh-ico fh-green">🔋</div>
+                <div>
+                  <div class="form-title">New UPS Record</div>
+                  <div class="form-sub">Fill in the details below</div>
+                </div>
+              </div>
+              <div class="form-body">
+                <div class="fields-grid">
+                  <div class="field">
+                    <label>UPS Serial No</label
+                    ><input
+                      type="text"
+                      id="ups-serial"
+                      placeholder="e.g. UPS-2024-001"
+                    />
+                  </div>
+                  <div class="field">
+                    <label>UPS Type</label>
+                    <select id="ups-type">
+                      <option value="">— Select —</option>
+                      <optgroup label="APC">
+                        <option>APC Back-UPS 600VA</option>
+                        <option>APC Back-UPS 1000VA</option>
+                        <option>APC Smart-UPS 1500VA</option>
+                        <option>APC Smart-UPS 2200VA</option>
+                      </optgroup>
+                      <optgroup label="Luminous">
+                        <option>Luminous 600VA</option>
+                        <option>Luminous 800VA</option>
+                        <option>Luminous 1000VA</option>
+                        <option>Luminous 1500VA</option>
+                      </optgroup>
+                      <optgroup label="Microtek">
+                        <option>Microtek 600VA</option>
+                        <option>Microtek 1000VA</option>
+                        <option>Microtek 2000VA</option>
+                      </optgroup>
+                      <optgroup label="Emerson">
+                        <option>Emerson 1000VA</option>
+                        <option>Emerson 2000VA</option>
+                        <option>Emerson 3000VA</option>
+                      </optgroup>
+                      <optgroup label="Online UPS">
+                        <option>Online UPS 1 KVA</option>
+                        <option>Online UPS 2 KVA</option>
+                        <option>Online UPS 3 KVA</option>
+                        <option>Online UPS 5 KVA</option>
+                        <option>Online UPS 10 KVA</option>
+                      </optgroup>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Department</label>
+                    <select id="ups-dept">
+                      <option value="">— Select —</option>
+                      <option>OPD</option>
+                      <option>IPD</option>
+                      <option>Blood Bank</option>
+                      <option>Pharmacy</option>
+                      <option>Central Lab</option>
+                      <option>ICU</option>
+                      <option>Emergency</option>
+                      <option>Radiology</option>
+                      <option>Operation Theatre</option>
+                      <option>Administration</option>
+                      <option>Accounts</option>
+                      <option>TPA-HR</option>
+                      <option>Civil Measurement Office</option>
+                      <option>MRD</option>
+                      <option>Captain Office</option>
+                      <option>Front-Reception</option>
+                      <option>Biomedical</option>
+                      <option>USG</option>
+                      <option>Server Room</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Location</label>
+                    <select id="ups-loc">
+                      <option value="">— Select —</option>
+                      <option>Ground Floor</option>
+                      <option>First Floor</option>
+                      <option>Second Floor</option>
+                      <option>Third Floor</option>
+                      <option>Fourth Floor</option>
+                      <option>Basement</option>
+                      <option>Reception Area</option>
+                      <option>Server Room</option>
+                    </select>
+                  </div>
+                  <div class="field field-full">
+                    <label>Remark / Exact Location</label
+                    ><textarea
+                      id="ups-remark"
+                      placeholder="e.g. Under desk at Blood Bank reporting section"
+                    ></textarea>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button class="btn btn-ghost" onclick="clearForm('ups')">
+                    Clear</button
+                  ><button class="btn btn-green" onclick="submitRecord('ups')">
+                    ✓ Save Record
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sub-panel" id="sub-ups-list">
+            <div class="list-card">
+              <div class="list-hdr">
+                <div class="list-title">
+                  UPS Records
+                  <span
+                    style="
+                      color: var(--muted);
+                      font-size: 12px;
+                      font-weight: 400;
+                    "
+                    id="ups-list-count"
+                  ></span>
+                </div>
+                <div class="srch">
+                  🔍<input
+                    type="text"
+                    id="srch-ups"
+                    placeholder="Search..."
+                    oninput="onSearch('ups')"
+                  />
+                </div>
+              </div>
+              <div class="tbl-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Date &amp; Time</th>
+                      <th>UPS Serial</th>
+                      <th>UPS Type</th>
+                      <th>Department</th>
+                      <th>Location</th>
+                      <th>Remark</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ups-tbody"></tbody>
+                </table>
+              </div>
+              <div class="pagination" id="ups-pagination"></div>
+            </div>
+          </div>
+        </div>
 
-function saveModalEdit(){
-  const type=_eType,idx=_eIdx;if(type===null||idx===null)return;
-  const data=load(type);const r=data[idx];
-  if(type==='pc'){
-    r.serial=g('me-serial')?.value.trim()||'';r.cpu=g('me-cpu')?.value.trim()||'';
-    r.keyboard=g('me-kb')?.value.trim()||'';r.mouse=g('me-mouse')?.value.trim()||'';
-    r.dept=g('me-dept')?.value||'';r.loc=g('me-loc')?.value||'';r.remark=g('me-remark')?.value.trim()||'';
-  }else if(type==='printer'){
-    r.serial=g('me-serial')?.value.trim()||'';r.ptype=g('me-ptype')?.value||'';
-    r.cart=g('me-cart')?.value||'';r.dept=g('me-dept')?.value||'';
-    r.loc=g('me-loc')?.value||'';r.remark=g('me-remark')?.value.trim()||'';
-  }else if(type==='ups'){
-    r.serial=g('me-serial')?.value.trim()||'';r.utype=g('me-utype')?.value||'';
-    r.dept=g('me-dept')?.value||'';r.loc=g('me-loc')?.value||'';r.remark=g('me-remark')?.value.trim()||'';
-  }else if(type==='mic'||type==='mobile'){
-    r.mtype=g('me-mtype')?.value||'';r.serial=g('me-serial')?.value.trim()||'';
-    r.dept=g('me-dept')?.value||'';r.loc=g('me-loc')?.value||'';r.remark=g('me-remark')?.value.trim()||'';
-  }
-  save(type,data);closeModal();renderList(type);showToast('✓ Record updated!');
-}
+        <!-- MIC MODULE -->
+        <div class="module-panel" id="mod-mic">
+          <div class="stat-strip">
+            <div class="stat-card sc-blue">
+              <div>
+                <div class="stat-val" id="mic-total">0</div>
+                <div class="stat-lbl">Total Records Saved</div>
+              </div>
+              <div class="stat-ico">🎤</div>
+            </div>
+            <div class="stat-card sc-green">
+              <div>
+                <div class="stat-val" id="mic-session">0</div>
+                <div class="stat-lbl">Added This Session</div>
+              </div>
+              <div class="stat-ico">✚</div>
+            </div>
+          </div>
+          <div class="view-tabs">
+            <div
+              class="view-tab active"
+              id="tab-mic-add"
+              onclick="switchTab('mic', 'add')"
+            >
+              <span class="tab-dot"></span>📋 ADD ENTRY
+            </div>
+            <div
+              class="view-tab"
+              id="tab-mic-list"
+              onclick="switchTab('mic', 'list')"
+            >
+              <span class="tab-dot"></span>📑 RECORDS LIST
+            </div>
+          </div>
+          <div class="sub-panel active" id="sub-mic-add">
+            <div class="form-card">
+              <div class="form-hdr">
+                <div
+                  class="fh-ico"
+                  style="background: rgba(255, 140, 66, 0.12)"
+                >
+                  🎤
+                </div>
+                <div>
+                  <div class="form-title">New Mic Record</div>
+                  <div class="form-sub">Fill in the details below</div>
+                </div>
+              </div>
+              <div class="form-body">
+                <div class="fields-grid">
+                  <div class="field">
+                    <label>Mic Type</label>
+                    <select id="mic-type">
+                      <option value="">— Select —</option>
+                      <option>Wired Microphone</option>
+                      <option>Wireless Microphone</option>
+                      <option>Condenser Mic</option>
+                      <option>Dynamic Mic</option>
+                      <option>Lapel / Lavalier Mic</option>
+                      <option>Headset Mic</option>
+                      <option>Boundary Mic</option>
+                      <option>USB Mic</option>
+                      <option>Conference Mic</option>
+                      <option>Boom Mic</option>
+                      <option>Collar Mic</option>
+                      <option>Tie Clip Mic</option>
+                      <option>Handheld Wireless Mic</option>
+                      <option>Podium Mic</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Serial Number</label
+                    ><input
+                      type="text"
+                      id="mic-serial"
+                      placeholder="e.g. MIC-2024-001"
+                    />
+                  </div>
+                  <div class="field">
+                    <label>Department</label>
+                    <select id="mic-dept">
+                      <option value="">— Select —</option>
+                      <option>OPD</option>
+                      <option>IPD</option>
+                      <option>Blood Bank</option>
+                      <option>Pharmacy</option>
+                      <option>Central Lab</option>
+                      <option>ICU</option>
+                      <option>Emergency</option>
+                      <option>Radiology</option>
+                      <option>Operation Theatre</option>
+                      <option>Administration</option>
+                      <option>Accounts</option>
+                      <option>TPA-HR</option>
+                      <option>Civil Measurement Office</option>
+                      <option>MRD</option>
+                      <option>Captain Office</option>
+                      <option>Front-Reception</option>
+                      <option>Biomedical</option>
+                      <option>USG</option>
+                      <option>Server Room</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Location</label>
+                    <select id="mic-loc">
+                      <option value="">— Select —</option>
+                      <option>Ground Floor</option>
+                      <option>First Floor</option>
+                      <option>Second Floor</option>
+                      <option>Third Floor</option>
+                      <option>Fourth Floor</option>
+                      <option>Basement</option>
+                      <option>Reception Area</option>
+                      <option>Server Room</option>
+                    </select>
+                  </div>
+                  <div class="field field-full">
+                    <label>Remark / Exact Location</label
+                    ><textarea
+                      id="mic-remark"
+                      placeholder="e.g. Conference room mic — near podium"
+                    ></textarea>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button class="btn btn-ghost" onclick="clearForm('mic')">
+                    Clear</button
+                  ><button class="btn btn-green" onclick="submitRecord('mic')">
+                    ✓ Save Record
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sub-panel" id="sub-mic-list">
+            <div class="list-card">
+              <div class="list-hdr">
+                <div class="list-title">
+                  Mic Records
+                  <span
+                    style="
+                      color: var(--muted);
+                      font-size: 12px;
+                      font-weight: 400;
+                    "
+                    id="mic-list-count"
+                  ></span>
+                </div>
+                <div class="srch">
+                  🔍<input
+                    type="text"
+                    id="srch-mic"
+                    placeholder="Search..."
+                    oninput="onSearch('mic')"
+                  />
+                </div>
+              </div>
+              <div class="tbl-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Date &amp; Time</th>
+                      <th>Mic Type</th>
+                      <th>Serial No</th>
+                      <th>Department</th>
+                      <th>Location</th>
+                      <th>Remark</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="mic-tbody"></tbody>
+                </table>
+              </div>
+              <div class="pagination" id="mic-pagination"></div>
+            </div>
+          </div>
+        </div>
 
-g('editModal').addEventListener('click',e=>{if(e.target===g('editModal'))closeModal();});
+        <!-- MOBILE MODULE -->
+        <div class="module-panel" id="mod-mobile">
+          <div class="stat-strip">
+            <div class="stat-card sc-blue">
+              <div>
+                <div class="stat-val" id="mob-total">0</div>
+                <div class="stat-lbl">Total Records Saved</div>
+              </div>
+              <div class="stat-ico">📱</div>
+            </div>
+            <div class="stat-card sc-green">
+              <div>
+                <div class="stat-val" id="mob-session">0</div>
+                <div class="stat-lbl">Added This Session</div>
+              </div>
+              <div class="stat-ico">✚</div>
+            </div>
+          </div>
+          <div class="view-tabs">
+            <div
+              class="view-tab active"
+              id="tab-mobile-add"
+              onclick="switchTab('mobile', 'add')"
+            >
+              <span class="tab-dot"></span>📋 ADD ENTRY
+            </div>
+            <div
+              class="view-tab"
+              id="tab-mobile-list"
+              onclick="switchTab('mobile', 'list')"
+            >
+              <span class="tab-dot"></span>📑 RECORDS LIST
+            </div>
+          </div>
+          <div class="sub-panel active" id="sub-mobile-add">
+            <div class="form-card">
+              <div class="form-hdr">
+                <div
+                  class="fh-ico"
+                  style="background: rgba(123, 94, 167, 0.15)"
+                >
+                  📱
+                </div>
+                <div>
+                  <div class="form-title">New Mobile Record</div>
+                  <div class="form-sub">Fill in the details below</div>
+                </div>
+              </div>
+              <div class="form-body">
+                <div class="fields-grid">
+                  <div class="field">
+                    <label>Mobile Type</label>
+                    <select id="mob-type">
+                      <option value="">— Select —</option>
+                      <option>Samsung Galaxy</option>
+                      <option>Samsung M Series</option>
+                      <option>Redmi / Xiaomi</option>
+                      <option>Realme</option>
+                      <option>Oppo</option>
+                      <option>Vivo</option>
+                      <option>iPhone (Apple)</option>
+                      <option>OnePlus</option>
+                      <option>Nokia</option>
+                      <option>Motorola</option>
+                      <option>Lava</option>
+                      <option>Micromax</option>
+                      <option>Itel</option>
+                      <option>Tecno</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Serial Number</label
+                    ><input
+                      type="text"
+                      id="mob-serial"
+                      placeholder="e.g. MOB-2024-001"
+                    />
+                  </div>
+                  <div class="field">
+                    <label>Department</label>
+                    <select id="mob-dept">
+                      <option value="">— Select —</option>
+                      <option>OPD</option>
+                      <option>IPD</option>
+                      <option>Blood Bank</option>
+                      <option>Pharmacy</option>
+                      <option>Central Lab</option>
+                      <option>ICU</option>
+                      <option>Emergency</option>
+                      <option>Radiology</option>
+                      <option>Operation Theatre</option>
+                      <option>Administration</option>
+                      <option>Accounts</option>
+                      <option>TPA-HR</option>
+                      <option>Civil Measurement Office</option>
+                      <option>MRD</option>
+                      <option>Captain Office</option>
+                      <option>Front-Reception</option>
+                      <option>Biomedical</option>
+                      <option>USG</option>
+                      <option>Server Room</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Location</label>
+                    <select id="mob-loc">
+                      <option value="">— Select —</option>
+                      <option>Ground Floor</option>
+                      <option>First Floor</option>
+                      <option>Second Floor</option>
+                      <option>Third Floor</option>
+                      <option>Fourth Floor</option>
+                      <option>Basement</option>
+                      <option>Reception Area</option>
+                      <option>Server Room</option>
+                    </select>
+                  </div>
+                  <div class="field field-full">
+                    <label>Remark / Exact Location</label
+                    ><textarea
+                      id="mob-remark"
+                      placeholder="e.g. Duty doctor mobile — Emergency ward charge nurse"
+                    ></textarea>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button class="btn btn-ghost" onclick="clearForm('mobile')">
+                    Clear</button
+                  ><button
+                    class="btn btn-green"
+                    onclick="submitRecord('mobile')"
+                  >
+                    ✓ Save Record
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sub-panel" id="sub-mobile-list">
+            <div class="list-card">
+              <div class="list-hdr">
+                <div class="list-title">
+                  Mobile Records
+                  <span
+                    style="
+                      color: var(--muted);
+                      font-size: 12px;
+                      font-weight: 400;
+                    "
+                    id="mob-list-count"
+                  ></span>
+                </div>
+                <div class="srch">
+                  🔍<input
+                    type="text"
+                    id="srch-mobile"
+                    placeholder="Search..."
+                    oninput="onSearch('mobile')"
+                  />
+                </div>
+              </div>
+              <div class="tbl-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Date &amp; Time</th>
+                      <th>Mobile Type</th>
+                      <th>Serial No</th>
+                      <th>Department</th>
+                      <th>Location</th>
+                      <th>Remark</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="mobile-tbody"></tbody>
+                </table>
+              </div>
+              <div class="pagination" id="mobile-pagination"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- /content -->
+    </main>
 
-function clearAllData(){
-  if(!confirm('⚠️ This will permanently delete ALL records (PC, Printer, UPS).\n\nAre you sure? This cannot be undone!'))return;
-  ['pc','printer','ups','mic','mobile'].forEach(t=>{save(t,[]);SESSION[t]=0;updateStats(t);});
-  updateBadges();
-  // re-render if list tab is open
-  ['pc','printer','ups','mic','mobile'].forEach(t=>{
-    if(g('sub-'+t+'-list')&&g('sub-'+t+'-list').classList.contains('active'))renderList(t);
-  });
-  showToast('All data cleared.','err');
-}
-function exportToExcel(){
-  const wb=XLSX.utils.book_new();
-  const today=new Date().toISOString().slice(0,10);
-  function addSheet(type,name){
-    const data=load(type);let headers,rows;
-    if(type==='pc'){headers=['#','Date & Time','PC Serial No','CPU Serial No','Keyboard Serial No','Mouse Serial No','Department','Location','Remark'];rows=data.map((r,i)=>[i+1,r.dt,r.serial,r.cpu,r.keyboard||'',r.mouse||'',r.dept,r.loc,r.remark||'']);}
-    else if(type==='printer'){headers=['#','Date & Time','Printer Serial No','Printer Type','Cartridge Type','Department','Location','Remark'];rows=data.map((r,i)=>[i+1,r.dt,r.serial,r.ptype,r.cart,r.dept,r.loc,r.remark||'']);}
-    else if(type==='ups'){headers=['#','Date & Time','UPS Serial No','UPS Type','Department','Location','Remark'];rows=data.map((r,i)=>[i+1,r.dt,r.serial,r.utype,r.dept,r.loc,r.remark||'']);}
-    else if(type==='mic'){headers=['#','Date & Time','Mic Type','Serial Number','Department','Location','Remark'];rows=data.map((r,i)=>[i+1,r.dt,r.mtype||'',r.serial||'',r.dept,r.loc,r.remark||'']);}
-    else{headers=['#','Date & Time','Mobile Type','Serial Number','Department','Location','Remark'];rows=data.map((r,i)=>[i+1,r.dt,r.mtype||'',r.serial||'',r.dept,r.loc,r.remark||'']);}
-    const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
-    ws['!cols']=headers.map(h=>({wch:Math.max(h.length+4,20)}));
-    XLSX.utils.book_append_sheet(wb,ws,name);
-  }
-  addSheet('pc','PC Details');addSheet('printer','Printer Details');addSheet('ups','UPS Details');addSheet('mic','Mic Details');addSheet('mobile','Mobile Details');
-  XLSX.writeFile(wb,'AssetTracker_'+today+'.xlsx');
-  showToast('✓ Exported! PC:'+load('pc').length+' | Printer:'+load('printer').length+' | UPS:'+load('ups').length+' | Mic:'+load('mic').length+' | Mobile:'+load('mobile').length);
-}
+    <div
+      class="drawer-overlay"
+      id="drawerOverlay"
+      onclick="closeDrawer()"
+    ></div>
+    <div class="toast" id="toast"></div>
 
-function showToast(msg,type='ok'){
-  const t=g('toast');t.textContent=msg;
-  t.style.background=type==='ok'?'var(--green)':'var(--red)';
-  t.style.color=type==='ok'?'#000':'#fff';
-  t.style.display='block';clearTimeout(t._tid);
-  t._tid=setTimeout(()=>{t.style.display='none';},3200);
-}
+    <!-- EDIT MODAL -->
+    <div class="modal-overlay" id="editModal">
+      <div class="modal">
+        <div class="modal-title" id="modal-title">✏️ Edit Record</div>
+        <div id="modal-fields"></div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-green" onclick="saveModalEdit()">
+            ✓ Update Record
+          </button>
+        </div>
+      </div>
+    </div>
 
-['pc','printer','ups','mic','mobile'].forEach(t=>{updateStats(t);});
-updateBadges();
+    <script>
+      const KEYS = {
+        pc: 'at_pc_v2',
+        printer: 'at_printer_v2',
+        ups: 'at_ups_v2',
+        mic: 'at_mic_v2',
+        mobile: 'at_mobile_v2',
+      };
+      const load = (t) => {
+        try {
+          return JSON.parse(localStorage.getItem(KEYS[t]) || '[]');
+        } catch (e) {
+          return [];
+        }
+      };
+      const save = (t, d) => localStorage.setItem(KEYS[t], JSON.stringify(d));
+      const SESSION = { pc: 0, printer: 0, ups: 0, mic: 0, mobile: 0 };
+      const PER_PAGE = 50;
+      const PAGE = { pc: 1, printer: 1, ups: 1, mic: 1, mobile: 1 };
+      const SEARCH = { pc: '', printer: '', ups: '', mic: '', mobile: '' };
+      const ts = () =>
+        new Date().toLocaleString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        });
+      const g = (id) => document.getElementById(id);
+      const v = (id) => (g(id) ? g(id).value.trim() : '');
+      const esc = (s) =>
+        String(s || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
 
-// ── MOBILE DRAWER ────────────────────────────────────────
-function toggleDrawer(){
-  const sb=document.querySelector('.sidebar');
-  const ov=document.getElementById('drawerOverlay');
-  const hb=document.getElementById('hamburgerBtn');
-  const isOpen=sb.classList.contains('drawer-open');
-  if(isOpen){closeDrawer();}else{
-    sb.classList.add('drawer-open');
-    ov.classList.add('open');
-    hb.classList.add('open');
-    document.body.style.overflow='hidden';
-  }
-}
-function closeDrawer(){
-  const sb=document.querySelector('.sidebar');
-  const ov=document.getElementById('drawerOverlay');
-  const hb=document.getElementById('hamburgerBtn');
-  sb.classList.remove('drawer-open');
-  ov.classList.remove('open');
-  hb.classList.remove('open');
-  document.body.style.overflow='';
-}
-// close drawer when a nav item is clicked on mobile
-document.querySelectorAll('.nav-item').forEach(item=>{
-  item.addEventListener('click',()=>{if(window.innerWidth<=768)closeDrawer();});
-});
-// close on resize to desktop
-window.addEventListener('resize',()=>{if(window.innerWidth>768)closeDrawer();});
-// swipe to close
-let _tx=0;
-document.querySelector('.sidebar').addEventListener('touchstart',e=>{_tx=e.touches[0].clientX;},{passive:true});
-document.querySelector('.sidebar').addEventListener('touchend',e=>{
-  if(_tx-e.changedTouches[0].clientX>60)closeDrawer();
-},{passive:true});
+      const modMeta = {
+        pc: ['PC Detail', 'Add and manage PC asset records'],
+        printer: ['Printer Detail', 'Add and manage printer asset records'],
+        ups: ['UPS Detail', 'Add and manage UPS asset records'],
+        mic: ['Mic Detail', 'Add and manage microphone asset records'],
+        mobile: ['Mobile Detail', 'Add and manage mobile asset records'],
+      };
 
-</script>
-</body>
+      function switchModule(name, el) {
+        document
+          .querySelectorAll('.module-panel')
+          .forEach((p) => p.classList.remove('active'));
+        document
+          .querySelectorAll('.nav-item')
+          .forEach((n) => n.classList.remove('active'));
+        g('mod-' + name).classList.add('active');
+        el.classList.add('active');
+        g('pageTitle').textContent = modMeta[name][0];
+        g('pageSub').textContent = modMeta[name][1];
+      }
+
+      function switchTab(type, tab) {
+        g('tab-' + type + '-add').classList.toggle('active', tab === 'add');
+        g('tab-' + type + '-list').classList.toggle('active', tab === 'list');
+        g('sub-' + type + '-add').classList.toggle('active', tab === 'add');
+        g('sub-' + type + '-list').classList.toggle('active', tab === 'list');
+        if (tab === 'list') renderList(type);
+      }
+
+      function submitRecord(type) {
+        let record;
+        if (type === 'pc') {
+          record = {
+            id: uid(),
+            serial: v('pc-serial'),
+            cpu: v('cpu-serial'),
+            keyboard: v('kb-serial'),
+            mouse: v('mouse-serial'),
+            dept: v('pc-dept'),
+            loc: v('pc-loc'),
+            remark: v('pc-remark'),
+            dt: ts(),
+          };
+        } else if (type === 'printer') {
+          record = {
+            id: uid(),
+            serial: v('pr-serial'),
+            ptype: v('pr-type'),
+            cart: v('pr-cart'),
+            dept: v('pr-dept'),
+            loc: v('pr-loc'),
+            remark: v('pr-remark'),
+            dt: ts(),
+          };
+        } else if (type === 'ups') {
+          record = {
+            id: uid(),
+            serial: v('ups-serial'),
+            utype: v('ups-type'),
+            dept: v('ups-dept'),
+            loc: v('ups-loc'),
+            remark: v('ups-remark'),
+            dt: ts(),
+          };
+        } else if (type === 'mic') {
+          record = {
+            id: uid(),
+            mtype: v('mic-type'),
+            serial: v('mic-serial'),
+            dept: v('mic-dept'),
+            loc: v('mic-loc'),
+            remark: v('mic-remark'),
+            dt: ts(),
+          };
+        } else {
+          record = {
+            id: uid(),
+            mtype: v('mob-type'),
+            serial: v('mob-serial'),
+            dept: v('mob-dept'),
+            loc: v('mob-loc'),
+            remark: v('mob-remark'),
+            dt: ts(),
+          };
+        }
+        const data = load(type);
+        data.push(record);
+        save(type, data);
+        SESSION[type]++;
+        clearForm(type);
+        updateStats(type);
+        updateBadges();
+        showToast('✓ Record saved!');
+      }
+
+      function uid() {
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      }
+
+      const fIds = {
+        pc: [
+          'pc-serial',
+          'cpu-serial',
+          'kb-serial',
+          'mouse-serial',
+          'pc-dept',
+          'pc-loc',
+          'pc-remark',
+        ],
+        printer: [
+          'pr-serial',
+          'pr-type',
+          'pr-cart',
+          'pr-dept',
+          'pr-loc',
+          'pr-remark',
+        ],
+        ups: ['ups-serial', 'ups-type', 'ups-dept', 'ups-loc', 'ups-remark'],
+        mic: ['mic-type', 'mic-serial', 'mic-dept', 'mic-loc', 'mic-remark'],
+        mobile: ['mob-type', 'mob-serial', 'mob-dept', 'mob-loc', 'mob-remark'],
+      };
+      function clearForm(t) {
+        fIds[t].forEach((id) => {
+          const el = g(id);
+          if (el) el.value = '';
+        });
+      }
+
+      function updateStats(type) {
+        const n = load(type).length;
+        const pre =
+          { printer: 'pr', pc: 'pc', ups: 'ups', mic: 'mic', mobile: 'mob' }[
+            type
+          ] || type;
+        g(pre + '-total').textContent = n;
+        g(pre + '-session').textContent = SESSION[type];
+      }
+      function updateBadges() {
+        g('cnt-pc').textContent = load('pc').length;
+        g('cnt-printer').textContent = load('printer').length;
+        g('cnt-ups').textContent = load('ups').length;
+        g('cnt-mic').textContent = load('mic').length;
+        g('cnt-mobile').textContent = load('mobile').length;
+      }
+
+      function onSearch(type) {
+        SEARCH[type] = g('srch-' + type).value.toLowerCase();
+        PAGE[type] = 1;
+        renderList(type);
+      }
+
+      function filteredData(type) {
+        const q = SEARCH[type];
+        const data = load(type);
+        if (!q) return data;
+        return data.filter((r) => JSON.stringify(r).toLowerCase().includes(q));
+      }
+
+      function renderList(type) {
+        const all = filteredData(type);
+        const total = all.length;
+        const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+        PAGE[type] = Math.min(PAGE[type], pages);
+        const start = (PAGE[type] - 1) * PER_PAGE;
+        const slice = all.slice(start, start + PER_PAGE);
+        const fullData = load(type);
+        const pre =
+          { printer: 'pr', pc: 'pc', ups: 'ups', mic: 'mic', mobile: 'mob' }[
+            type
+          ] || type;
+        const cntEl = g(pre + '-list-count');
+        if (cntEl)
+          cntEl.textContent =
+            '(' + total + ' record' + (total !== 1 ? 's' : '') + ')';
+
+        const tbodyId =
+          {
+            printer: 'printer-tbody',
+            pc: 'pc-tbody',
+            ups: 'ups-tbody',
+            mic: 'mic-tbody',
+            mobile: 'mobile-tbody',
+          }[type] || type + '-tbody';
+        const tbody = g(tbodyId);
+
+        if (!slice.length) {
+          const cols = { pc: 10, printer: 9, ups: 8, mic: 8, mobile: 8 };
+          tbody.innerHTML =
+            '<tr><td class="td-empty" colspan="' +
+            cols[type] +
+            '">No records found.</td></tr>';
+        } else {
+          tbody.innerHTML = slice
+            .map((r, si) => {
+              const realIdx = fullData.findIndex((x) => x.id === r.id);
+              const n = start + si + 1;
+              if (type === 'pc') {
+                return (
+                  '<tr><td>' +
+                  n +
+                  '</td><td style="white-space:nowrap">' +
+                  r.dt +
+                  '</td><td><b>' +
+                  esc(r.serial) +
+                  '</b></td><td>' +
+                  esc(r.cpu) +
+                  '</td><td>' +
+                  esc(r.keyboard || '—') +
+                  '</td><td>' +
+                  esc(r.mouse || '—') +
+                  '</td><td>' +
+                  esc(r.dept) +
+                  '</td><td>' +
+                  esc(r.loc) +
+                  '</td><td style="max-width:160px;white-space:normal">' +
+                  esc(r.remark || '—') +
+                  '</td><td><div class="action-cell"><button class="btn-edit" onclick="openEdit(\'pc\',' +
+                  realIdx +
+                  ')">✏️ Edit</button><button class="btn-del" onclick="deleteRecord(\'pc\',' +
+                  realIdx +
+                  ')">✕ Del</button></div></td></tr>'
+                );
+              } else if (type === 'printer') {
+                return (
+                  '<tr><td>' +
+                  n +
+                  '</td><td style="white-space:nowrap">' +
+                  r.dt +
+                  '</td><td><b>' +
+                  esc(r.serial) +
+                  '</b></td><td>' +
+                  esc(r.ptype) +
+                  '</td><td>' +
+                  esc(r.cart) +
+                  '</td><td>' +
+                  esc(r.dept) +
+                  '</td><td>' +
+                  esc(r.loc) +
+                  '</td><td style="max-width:160px;white-space:normal">' +
+                  esc(r.remark || '—') +
+                  '</td><td><div class="action-cell"><button class="btn-edit" onclick="openEdit(\'printer\',' +
+                  realIdx +
+                  ')">✏️ Edit</button><button class="btn-del" onclick="deleteRecord(\'printer\',' +
+                  realIdx +
+                  ')">✕ Del</button></div></td></tr>'
+                );
+              } else {
+                return (
+                  '<tr><td>' +
+                  n +
+                  '</td><td style="white-space:nowrap">' +
+                  r.dt +
+                  '</td><td><b>' +
+                  esc(r.serial) +
+                  '</b></td><td>' +
+                  esc(r.utype) +
+                  '</td><td>' +
+                  esc(r.dept) +
+                  '</td><td>' +
+                  esc(r.loc) +
+                  '</td><td style="max-width:180px;white-space:normal">' +
+                  esc(r.remark || '—') +
+                  '</td><td><div class="action-cell"><button class="btn-edit" onclick="openEdit(\'ups\',' +
+                  realIdx +
+                  ')">✏️ Edit</button><button class="btn-del" onclick="deleteRecord(\'ups\',' +
+                  realIdx +
+                  ')">✕ Del</button></div></td></tr>'
+                );
+              }
+            })
+            .join('');
+        }
+        renderPagination(type, total, pages);
+      }
+
+      function renderPagination(type, total, pages) {
+        const pagId =
+          {
+            printer: 'printer-pagination',
+            mic: 'mic-pagination',
+            mobile: 'mobile-pagination',
+          }[type] || type + '-pagination';
+        const pagEl = g(pagId);
+        if (!pagEl) return;
+        const cur = PAGE[type];
+        if (total === 0) {
+          pagEl.innerHTML = '';
+          return;
+        }
+        const start = (cur - 1) * PER_PAGE + 1;
+        const end = Math.min(cur * PER_PAGE, total);
+        const mk = (p, label, active, disabled) =>
+          '<button class="pg-btn' +
+          (active ? ' active' : '') +
+          '"' +
+          (disabled ? ' disabled' : '') +
+          ' onclick="goPage(\'' +
+          type +
+          "'," +
+          p +
+          ')">' +
+          label +
+          '</button>';
+        let btns = mk(cur - 1, '‹', false, cur === 1);
+        if (pages <= 7) {
+          for (let p = 1; p <= pages; p++) btns += mk(p, p, p === cur, false);
+        } else {
+          btns += mk(1, '1', cur === 1, false);
+          if (cur > 3)
+            btns += '<span style="color:var(--muted);padding:0 4px">…</span>';
+          const s = Math.max(2, cur - 1),
+            e = Math.min(pages - 1, cur + 1);
+          for (let p = s; p <= e; p++) btns += mk(p, p, p === cur, false);
+          if (cur < pages - 2)
+            btns += '<span style="color:var(--muted);padding:0 4px">…</span>';
+          btns += mk(pages, pages, cur === pages, false);
+        }
+        btns += mk(cur + 1, '›', false, cur === pages);
+        pagEl.innerHTML =
+          '<div class="page-info">Showing ' +
+          start +
+          '–' +
+          end +
+          ' of ' +
+          total +
+          ' records</div><div class="page-btns">' +
+          btns +
+          '</div>';
+      }
+
+      function goPage(type, p) {
+        PAGE[type] = p;
+        renderList(type);
+      }
+
+      function deleteRecord(type, idx) {
+        if (!confirm('Delete this record? This cannot be undone.')) return;
+        const data = load(type);
+        data.splice(idx, 1);
+        save(type, data);
+        renderList(type);
+        updateStats(type);
+        updateBadges();
+        showToast('Record deleted.', 'err');
+      }
+
+      let _eType = null,
+        _eIdx = null;
+      const DEPTS = [
+        'OPD',
+        'IPD',
+        'Blood Bank',
+        'Pharmacy',
+        'Central Lab',
+        'ICU',
+        'Emergency',
+        'Radiology',
+        'Operation Theatre',
+        'Administration',
+        'Accounts',
+        'TPA-HR',
+        'Civil Measurement Office',
+        'MRD',
+        'Captain Office',
+        'Front-Reception',
+        'Biomedical',
+        'USG',
+        'Server Room',
+      ];
+      const LOCS = [
+        'Ground Floor',
+        'First Floor',
+        'Second Floor',
+        'Third Floor',
+        'Fourth Floor',
+        'Basement',
+        'Reception Area',
+        'Server Room',
+      ];
+      const LOCS_UPS = [...LOCS, 'Server Room'];
+      const PR_TYPES = [
+        'Dell Laser Printer',
+        'TSC Label Printer',
+        'Canon Inkjet',
+        'Canon LaserJet',
+        'HP LaserJet',
+        'HP DeskJet',
+        'Epson Dot Matrix',
+        'Epson EcoTank',
+        'Label Printer',
+        'Barcode Printer',
+        'Zebra Thermal Printer',
+        'Brother Laser',
+      ];
+      const CARTS = [
+        'HP 88A (CC388A)',
+        'HP 12A (Q2612A)',
+        'HP 35A (CB435A)',
+        'HP 36A (CB436A)',
+        'HP 78A (CE278A)',
+        'HP 85A (CE285A)',
+        'HP 26A (CF226A)',
+        'HP 05A (CE505A)',
+        'HP 83A (CF283A)',
+        'HP 17A (CF217A)',
+        'HP 48A (CF248A)',
+        'Canon 925',
+        'Canon 328',
+        'Canon 337',
+        'Canon 303',
+        'Canon 326',
+        'Canon 047',
+        'Canon CRG 052',
+        'Epson 001 CMYK Set',
+        'Epson 003 CMYK Set',
+        'Epson T664 CMYK',
+        'Epson Ribbon (Dot Matrix)',
+        'Dell 1020 Toner',
+        'Dell 1130 Toner',
+        'Dell E310 Toner',
+        'TSC Thermal Label Roll',
+        'Zebra Thermal Roll',
+        'Barcode Ribbon Wax',
+        'Barcode Ribbon Resin',
+        'Other',
+      ];
+      const UPS_TYPES = [
+        'APC Back-UPS 600VA',
+        'APC Back-UPS 1000VA',
+        'APC Smart-UPS 1500VA',
+        'APC Smart-UPS 2200VA',
+        'Luminous 600VA',
+        'Luminous 800VA',
+        'Luminous 1000VA',
+        'Luminous 1500VA',
+        'Microtek 600VA',
+        'Microtek 1000VA',
+        'Microtek 2000VA',
+        'Emerson 1000VA',
+        'Emerson 2000VA',
+        'Emerson 3000VA',
+        'Online UPS 1 KVA',
+        'Online UPS 2 KVA',
+        'Online UPS 3 KVA',
+        'Online UPS 5 KVA',
+        'Online UPS 10 KVA',
+        'Other',
+      ];
+      const DEPTS_UPS = [...DEPTS, 'Server Room'];
+      const MIC_TYPES = [
+        'Wired Microphone',
+        'Wireless Microphone',
+        'Condenser Mic',
+        'Dynamic Mic',
+        'Lapel / Lavalier Mic',
+        'Headset Mic',
+        'Boundary Mic',
+        'USB Mic',
+        'Conference Mic',
+        'Boom Mic',
+        'Collar Mic',
+        'Tie Clip Mic',
+        'Handheld Wireless Mic',
+        'Podium Mic',
+        'Other',
+      ];
+      const MOB_TYPES = [
+        'Samsung Galaxy',
+        'Samsung M Series',
+        'Redmi / Xiaomi',
+        'Realme',
+        'Oppo',
+        'Vivo',
+        'iPhone (Apple)',
+        'OnePlus',
+        'Nokia',
+        'Motorola',
+        'Lava',
+        'Micromax',
+        'Itel',
+        'Tecno',
+        'Other',
+      ];
+
+      function selOpts(arr, cur) {
+        return arr
+          .map(
+            (o) =>
+              '<option' +
+              (o === cur ? ' selected' : '') +
+              '>' +
+              esc(o) +
+              '</option>',
+          )
+          .join('');
+      }
+
+      function openEdit(type, idx) {
+        _eType = type;
+        _eIdx = idx;
+        const r = load(type)[idx];
+        if (!r) return;
+        const icons = { pc: '🖥️', printer: '🖨️', ups: '🔋' };
+        g('modal-title').innerHTML =
+          icons[type] + ' Edit ' + modMeta[type][0] + ' Record';
+        let html = '';
+        if (type === 'pc') {
+          html =
+            '<div class="fields-grid"><div class="field"><label>PC Serial No</label><input type="text" id="me-serial" value="' +
+            esc(r.serial) +
+            '"/></div><div class="field"><label>CPU Serial No</label><input type="text" id="me-cpu" value="' +
+            esc(r.cpu) +
+            '"/></div><div class="field"><label>Keyboard Serial</label><input type="text" id="me-kb" value="' +
+            esc(r.keyboard || '') +
+            '"/></div><div class="field"><label>Mouse Serial</label><input type="text" id="me-mouse" value="' +
+            esc(r.mouse || '') +
+            '"/></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>' +
+            selOpts(DEPTS, r.dept) +
+            '</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>' +
+            selOpts(LOCS, r.loc) +
+            '</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">' +
+            esc(r.remark || '') +
+            '</textarea></div></div>';
+        } else if (type === 'printer') {
+          html =
+            '<div class="fields-grid"><div class="field"><label>Printer Serial No</label><input type="text" id="me-serial" value="' +
+            esc(r.serial) +
+            '"/></div><div class="field"><label>Printer Type</label><select id="me-ptype"><option value="">— Select —</option>' +
+            selOpts(PR_TYPES, r.ptype) +
+            '</select></div><div class="field"><label>Cartridge Type</label><select id="me-cart"><option value="">— Select —</option>' +
+            selOpts(CARTS, r.cart) +
+            '</select></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>' +
+            selOpts(DEPTS, r.dept) +
+            '</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>' +
+            selOpts(LOCS, r.loc) +
+            '</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">' +
+            esc(r.remark || '') +
+            '</textarea></div></div>';
+        } else if (type === 'ups') {
+          html =
+            '<div class="fields-grid"><div class="field"><label>UPS Serial No</label><input type="text" id="me-serial" value="' +
+            esc(r.serial) +
+            '"/></div><div class="field"><label>UPS Type</label><select id="me-utype"><option value="">— Select —</option>' +
+            selOpts(UPS_TYPES, r.utype) +
+            '</select></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>' +
+            selOpts(DEPTS_UPS, r.dept) +
+            '</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>' +
+            selOpts(LOCS, r.loc) +
+            '</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">' +
+            esc(r.remark || '') +
+            '</textarea></div></div>';
+        } else if (type === 'mic') {
+          html =
+            '<div class="fields-grid"><div class="field"><label>Mic Type</label><select id="me-mtype"><option value="">— Select —</option>' +
+            selOpts(MIC_TYPES, r.mtype) +
+            '</select></div><div class="field"><label>Serial Number</label><input type="text" id="me-serial" value="' +
+            esc(r.serial || '') +
+            '"/></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>' +
+            selOpts(DEPTS_UPS, r.dept) +
+            '</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>' +
+            selOpts(LOCS, r.loc) +
+            '</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">' +
+            esc(r.remark || '') +
+            '</textarea></div></div>';
+        } else {
+          html =
+            '<div class="fields-grid"><div class="field"><label>Mobile Type</label><select id="me-mtype"><option value="">— Select —</option>' +
+            selOpts(MOB_TYPES, r.mtype) +
+            '</select></div><div class="field"><label>Serial Number</label><input type="text" id="me-serial" value="' +
+            esc(r.serial || '') +
+            '"/></div><div class="field"><label>Department</label><select id="me-dept"><option value="">— Select —</option>' +
+            selOpts(DEPTS_UPS, r.dept) +
+            '</select></div><div class="field"><label>Location</label><select id="me-loc"><option value="">— Select —</option>' +
+            selOpts(LOCS, r.loc) +
+            '</select></div><div class="field field-full"><label>Remark</label><textarea id="me-remark">' +
+            esc(r.remark || '') +
+            '</textarea></div></div>';
+        }
+        g('modal-fields').innerHTML = html;
+        g('editModal').classList.add('open');
+      }
+
+      function closeModal() {
+        g('editModal').classList.remove('open');
+        _eType = null;
+        _eIdx = null;
+      }
+
+      function saveModalEdit() {
+        const type = _eType,
+          idx = _eIdx;
+        if (type === null || idx === null) return;
+        const data = load(type);
+        const r = data[idx];
+        if (type === 'pc') {
+          r.serial = g('me-serial')?.value.trim() || '';
+          r.cpu = g('me-cpu')?.value.trim() || '';
+          r.keyboard = g('me-kb')?.value.trim() || '';
+          r.mouse = g('me-mouse')?.value.trim() || '';
+          r.dept = g('me-dept')?.value || '';
+          r.loc = g('me-loc')?.value || '';
+          r.remark = g('me-remark')?.value.trim() || '';
+        } else if (type === 'printer') {
+          r.serial = g('me-serial')?.value.trim() || '';
+          r.ptype = g('me-ptype')?.value || '';
+          r.cart = g('me-cart')?.value || '';
+          r.dept = g('me-dept')?.value || '';
+          r.loc = g('me-loc')?.value || '';
+          r.remark = g('me-remark')?.value.trim() || '';
+        } else if (type === 'ups') {
+          r.serial = g('me-serial')?.value.trim() || '';
+          r.utype = g('me-utype')?.value || '';
+          r.dept = g('me-dept')?.value || '';
+          r.loc = g('me-loc')?.value || '';
+          r.remark = g('me-remark')?.value.trim() || '';
+        } else if (type === 'mic' || type === 'mobile') {
+          r.mtype = g('me-mtype')?.value || '';
+          r.serial = g('me-serial')?.value.trim() || '';
+          r.dept = g('me-dept')?.value || '';
+          r.loc = g('me-loc')?.value || '';
+          r.remark = g('me-remark')?.value.trim() || '';
+        }
+        save(type, data);
+        closeModal();
+        renderList(type);
+        showToast('✓ Record updated!');
+      }
+
+      g('editModal').addEventListener('click', (e) => {
+        if (e.target === g('editModal')) closeModal();
+      });
+
+      function clearAllData() {
+        if (
+          !confirm(
+            '⚠️ This will permanently delete ALL records (PC, Printer, UPS).\n\nAre you sure? This cannot be undone!',
+          )
+        )
+          return;
+        ['pc', 'printer', 'ups', 'mic', 'mobile'].forEach((t) => {
+          save(t, []);
+          SESSION[t] = 0;
+          updateStats(t);
+        });
+        updateBadges();
+        // re-render if list tab is open
+        ['pc', 'printer', 'ups', 'mic', 'mobile'].forEach((t) => {
+          if (
+            g('sub-' + t + '-list') &&
+            g('sub-' + t + '-list').classList.contains('active')
+          )
+            renderList(t);
+        });
+        showToast('All data cleared.', 'err');
+      }
+      function exportToExcel() {
+        const wb = XLSX.utils.book_new();
+        const today = new Date().toISOString().slice(0, 10);
+        function addSheet(type, name) {
+          const data = load(type);
+          let headers, rows;
+          if (type === 'pc') {
+            headers = [
+              '#',
+              'Date & Time',
+              'PC Serial No',
+              'CPU Serial No',
+              'Keyboard Serial No',
+              'Mouse Serial No',
+              'Department',
+              'Location',
+              'Remark',
+            ];
+            rows = data.map((r, i) => [
+              i + 1,
+              r.dt,
+              r.serial,
+              r.cpu,
+              r.keyboard || '',
+              r.mouse || '',
+              r.dept,
+              r.loc,
+              r.remark || '',
+            ]);
+          } else if (type === 'printer') {
+            headers = [
+              '#',
+              'Date & Time',
+              'Printer Serial No',
+              'Printer Type',
+              'Cartridge Type',
+              'Department',
+              'Location',
+              'Remark',
+            ];
+            rows = data.map((r, i) => [
+              i + 1,
+              r.dt,
+              r.serial,
+              r.ptype,
+              r.cart,
+              r.dept,
+              r.loc,
+              r.remark || '',
+            ]);
+          } else if (type === 'ups') {
+            headers = [
+              '#',
+              'Date & Time',
+              'UPS Serial No',
+              'UPS Type',
+              'Department',
+              'Location',
+              'Remark',
+            ];
+            rows = data.map((r, i) => [
+              i + 1,
+              r.dt,
+              r.serial,
+              r.utype,
+              r.dept,
+              r.loc,
+              r.remark || '',
+            ]);
+          } else if (type === 'mic') {
+            headers = [
+              '#',
+              'Date & Time',
+              'Mic Type',
+              'Serial Number',
+              'Department',
+              'Location',
+              'Remark',
+            ];
+            rows = data.map((r, i) => [
+              i + 1,
+              r.dt,
+              r.mtype || '',
+              r.serial || '',
+              r.dept,
+              r.loc,
+              r.remark || '',
+            ]);
+          } else {
+            headers = [
+              '#',
+              'Date & Time',
+              'Mobile Type',
+              'Serial Number',
+              'Department',
+              'Location',
+              'Remark',
+            ];
+            rows = data.map((r, i) => [
+              i + 1,
+              r.dt,
+              r.mtype || '',
+              r.serial || '',
+              r.dept,
+              r.loc,
+              r.remark || '',
+            ]);
+          }
+          const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+          ws['!cols'] = headers.map((h) => ({
+            wch: Math.max(h.length + 4, 20),
+          }));
+          XLSX.utils.book_append_sheet(wb, ws, name);
+        }
+        addSheet('pc', 'PC Details');
+        addSheet('printer', 'Printer Details');
+        addSheet('ups', 'UPS Details');
+        addSheet('mic', 'Mic Details');
+        addSheet('mobile', 'Mobile Details');
+        XLSX.writeFile(wb, 'AssetTracker_' + today + '.xlsx');
+        showToast(
+          '✓ Exported! PC:' +
+            load('pc').length +
+            ' | Printer:' +
+            load('printer').length +
+            ' | UPS:' +
+            load('ups').length +
+            ' | Mic:' +
+            load('mic').length +
+            ' | Mobile:' +
+            load('mobile').length,
+        );
+      }
+
+      function showToast(msg, type = 'ok') {
+        const t = g('toast');
+        t.textContent = msg;
+        t.style.background = type === 'ok' ? 'var(--green)' : 'var(--red)';
+        t.style.color = type === 'ok' ? '#000' : '#fff';
+        t.style.display = 'block';
+        clearTimeout(t._tid);
+        t._tid = setTimeout(() => {
+          t.style.display = 'none';
+        }, 3200);
+      }
+
+      ['pc', 'printer', 'ups', 'mic', 'mobile'].forEach((t) => {
+        updateStats(t);
+      });
+      updateBadges();
+
+      // ── MOBILE DRAWER ────────────────────────────────────────
+      function toggleDrawer() {
+        const sb = document.querySelector('.sidebar');
+        const ov = document.getElementById('drawerOverlay');
+        const hb = document.getElementById('hamburgerBtn');
+        const isOpen = sb.classList.contains('drawer-open');
+        if (isOpen) {
+          closeDrawer();
+        } else {
+          sb.classList.add('drawer-open');
+          ov.classList.add('open');
+          hb.classList.add('open');
+          document.body.style.overflow = 'hidden';
+        }
+      }
+      function closeDrawer() {
+        const sb = document.querySelector('.sidebar');
+        const ov = document.getElementById('drawerOverlay');
+        const hb = document.getElementById('hamburgerBtn');
+        sb.classList.remove('drawer-open');
+        ov.classList.remove('open');
+        hb.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+      // close drawer when a nav item is clicked on mobile
+      document.querySelectorAll('.nav-item').forEach((item) => {
+        item.addEventListener('click', () => {
+          if (window.innerWidth <= 768) closeDrawer();
+        });
+      });
+      // close on resize to desktop
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) closeDrawer();
+      });
+      // swipe to close
+      let _tx = 0;
+      document.querySelector('.sidebar').addEventListener(
+        'touchstart',
+        (e) => {
+          _tx = e.touches[0].clientX;
+        },
+        { passive: true },
+      );
+      document.querySelector('.sidebar').addEventListener(
+        'touchend',
+        (e) => {
+          if (_tx - e.changedTouches[0].clientX > 60) closeDrawer();
+        },
+        { passive: true },
+      );
+    </script>
+  </body>
 </html>
